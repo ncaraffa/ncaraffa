@@ -7,6 +7,7 @@ var solved := false
 
 
 func _init() -> void:
+	intensity = 1
 	id = "press_enter"
 	title = "PRESS ENTER"
 	resources = ["computer"]

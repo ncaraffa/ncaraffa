@@ -3,6 +3,7 @@ extends MysteryEvent
 
 
 func _init() -> void:
+	intensity = 1
 	id = "clock"
 	title = "The kitchen clock"
 	resources = ["clock_kitchen"]

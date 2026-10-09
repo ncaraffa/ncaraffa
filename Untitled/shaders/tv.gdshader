@@ -43,6 +43,19 @@ void fragment() {
 		col += (n2 - 0.5) * 0.1;
 		col += vec3(hash(uv * 400.0 + t)) * 0.06;
 		col *= 0.9 + 0.1 * sin(uv.y * 480.0);
+	} else if (mode == 5) {
+		// a pale face pressed against the inside of the screen, smeared by the signal
+		vec2 q = (uv - vec2(0.5, 0.52)) * vec2(1.25, 1.0);
+		q.x += (hash(vec2(floor(uv.y * 60.0), floor(t * 30.0))) - 0.5) * 0.05;
+		float face = smoothstep(0.36, 0.30, length(q * vec2(1.0, 0.82)));
+		vec3 skin = vec3(0.78, 0.76, 0.72) * (0.85 + 0.15 * noise(uv * 30.0));
+		col = mix(vec3(0.02), skin, face);
+		float eyes = smoothstep(0.075, 0.05, length((q - vec2(-0.12, 0.06)) * vec2(1.0, 0.7)))
+			+ smoothstep(0.075, 0.05, length((q - vec2(0.12, 0.06)) * vec2(1.0, 0.7)));
+		float mouth = smoothstep(0.09, 0.06, length((q - vec2(0.0, -0.17)) * vec2(1.5, 0.45)));
+		col = mix(col, vec3(0.0), clamp(eyes + mouth, 0.0, 1.0) * face);
+		col += vec3(hash(uv * 300.0 + t)) * 0.25;
+		col *= 0.85 + 0.15 * sin(uv.y * 480.0);
 	}
 	if (mode == 0) {
 		ALBEDO = vec3(0.025, 0.03, 0.03);

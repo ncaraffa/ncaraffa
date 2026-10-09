@@ -7,6 +7,7 @@ var phone: Phone
 
 
 func _init() -> void:
+	intensity = 1
 	id = "phone"
 	title = "The phone"
 	resources = ["phone"]

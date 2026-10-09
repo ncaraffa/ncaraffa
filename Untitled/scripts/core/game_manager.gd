@@ -14,6 +14,9 @@ const WORLD_SCENE := "res://scenes/world.tscn"
 var settings := {
 	"mouse_sensitivity": 0.0022,
 	"master_volume": 0.85,
+	"ambience_volume": 1.0,
+	"sfx_volume": 1.0,
+	"horror_volume": 1.0,
 	"vhs": false,
 	"grain": true,
 	"subtitles": true,
@@ -46,6 +49,7 @@ func _setup_input() -> void:
 		"pause": [KEY_ESCAPE],
 		"crouch": [KEY_CTRL, KEY_C],
 		"debug_panel": [KEY_F1],
+		"notes": [KEY_TAB, KEY_N],
 	}
 	for action in keys:
 		if InputMap.has_action(action):
@@ -85,6 +89,11 @@ func set_setting(key: String, value) -> void:
 func apply_settings() -> void:
 	var bus := AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_volume_db(bus, linear_to_db(max(0.0001, float(settings.master_volume))))
+	# per-category trims live on the category buses' own effects-free gain
+	for pair in [["Ambience", "ambience_volume"], ["SFX", "sfx_volume"], ["Horror", "horror_volume"]]:
+		var idx := AudioServer.get_bus_index(pair[0])
+		if idx != -1:
+			AudioServer.set_bus_volume_db(idx, linear_to_db(max(0.0001, float(settings[pair[1]]))))
 	if DisplayServer.get_name() != "headless":
 		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 		if DisplayServer.window_get_mode() != want and not (want == DisplayServer.WINDOW_MODE_WINDOWED and DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED):

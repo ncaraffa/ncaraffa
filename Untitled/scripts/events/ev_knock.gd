@@ -1,10 +1,11 @@
 extends MysteryEvent
 ## EVENT 3 — Three knocks. Opening the door is optional.
 
-const FLYER := "LARKSPUR COURT\nNEIGHBORHOOD WATCH\n\nMeeting Thursday 7 PM\nat the Pruitts' (no. 9)\n\nReminder: please lock your doors\nand leave a porch light on at night.\n\nCoffee & pie."
+const FLYER := "LARKSPUR COURT\nNEIGHBORHOOD WATCH\n\nMeeting Thursday 7 PM\nat the Pruitts' (no. 12)\n\nReminder: please lock your doors\nand leave a porch light on at night.\n\nCoffee & pie."
 
 
 func _init() -> void:
+	intensity = 1
 	id = "knock"
 	title = "The knocking"
 	resources = ["front_door"]

@@ -156,7 +156,8 @@ func _run() -> void:
 	Engine.time_scale = 6.0
 	dir.time_scale = 40.0
 	var waited := 0.0
-	while dir.fired.size() < dir.events.size() and waited < 240.0:
+	var mains: Array = dir.main_events()
+	while not dir.main_done() and waited < 240.0:
 		await seconds(1.0)
 		waited += 1.0
 		# answer the phone if it rings, to exercise that path too
@@ -164,7 +165,8 @@ func _run() -> void:
 			p.global_position = phone.global_position + Vector3(0.6, -0.7, 0)
 			phone.interact(p)
 	print("  order: ", " > ".join(dir.order), "   (%.0f s of test time)" % waited)
-	ok(dir.fired.size() == dir.events.size(), "all %d events fired (%d)" % [dir.events.size(), dir.fired.size()])
+	var fired_main := mains.filter(func(e): return dir.fired.has(e.id)).size()
+	ok(fired_main == mains.size(), "all %d main events fired (%d)" % [mains.size(), fired_main])
 	var gaps := []
 	var prev := -1.0
 	for e in WS.event_log:
@@ -176,7 +178,7 @@ func _run() -> void:
 	await seconds(60.0)
 	Engine.time_scale = 1.0
 	var running := []
-	for ev in dir.events:
+	for ev in mains:
 		if ev.running:
 			running.append(ev.id)
 	running.erase("car")

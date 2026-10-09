@@ -3,6 +3,7 @@ extends MysteryEvent
 
 
 func _init() -> void:
+	intensity = 1
 	id = "photo"
 	title = "The photograph"
 	resources = ["photo"]

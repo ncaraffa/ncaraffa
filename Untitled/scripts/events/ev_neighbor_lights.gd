@@ -6,6 +6,7 @@ var family := ""
 
 
 func _init() -> void:
+	intensity = 0
 	id = "neighbor_lights"
 	title = "The house across the street"
 	resources = ["neighbor_lights"]

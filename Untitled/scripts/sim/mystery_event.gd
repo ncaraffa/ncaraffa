@@ -15,6 +15,14 @@ var resources: PackedStringArray = []
 var kinds: PackedStringArray = []
 var repeatable := true
 var weight := 1.0
+## 0 everyday, 1 strange, 2 disturbing, 3 intense terror
+var intensity := 1
+## first night this event may happen on
+var min_night := 1
+## "main" = the ten original events (2-3 min, then 4-6 min); "side" = apparitions
+## and other night-dependent happenings on their own, irregular schedule.
+var track := "main"
+var max_per_night := 1
 var running := false
 var director: Node
 var rng := RandomNumberGenerator.new()
@@ -52,7 +60,18 @@ func finish() -> void:
 
 
 func record(variant: String, data: Dictionary = {}) -> void:
-	WorldState.log_event(id, variant, data)
+	var d := data.duplicate()
+	d["intensity"] = intensity
+	WorldState.log_event(id, variant, d)
+
+
+func night() -> int:
+	return int(WorldState.get_state("night", 1))
+
+
+func figure() -> ShadowFigure:
+	var pool = WorldState.get_obj("figures")
+	return pool.borrow() if pool else null
 
 
 func house() -> House:

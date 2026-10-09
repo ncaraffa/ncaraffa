@@ -4,6 +4,7 @@ extends MysteryEvent
 
 
 func _init() -> void:
+	intensity = 1
 	id = "tv"
 	title = "The television"
 	resources = ["tv"]

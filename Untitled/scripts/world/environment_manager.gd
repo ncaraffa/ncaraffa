@@ -11,8 +11,13 @@ var _t := 0.0
 var _fade := 1.0
 
 
+var _fade_target := 0.0
+var _fade_speed := 0.35
+
+
 func setup(parent: Node) -> void:
 	name = "EnvironmentManager"
+	WorldState.register("environment", self)
 	var sky_mat := ShaderMaterial.new()
 	sky_mat.shader = load("res://shaders/sky.gdshader")
 	sky_mat.set_shader_parameter("cloud_tex", Mats.tex("cloud_noise"))
@@ -83,6 +88,12 @@ func setup(parent: Node) -> void:
 	_apply_settings()
 
 
+## Fade the picture to black (1.0) or back (0.0) over `secs`.
+func fade_to(v: float, secs: float) -> void:
+	_fade_target = v
+	_fade_speed = absf(v - _fade) / max(0.05, secs)
+
+
 func _apply_settings() -> void:
 	post_mat.set_shader_parameter("grain", 0.045 if GameManager.settings.grain else 0.0)
 	post_mat.set_shader_parameter("vhs", 1.0 if GameManager.settings.vhs else 0.0)
@@ -90,8 +101,8 @@ func _apply_settings() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	if _fade > 0.0:
-		_fade = max(0.0, _fade - delta * 0.35)
+	if _fade != _fade_target:
+		_fade = move_toward(_fade, _fade_target, delta * _fade_speed)
 		post_mat.set_shader_parameter("fade", _fade)
 	# clouds drifting over the moon: tiny variations of moonlight
 	if moon:

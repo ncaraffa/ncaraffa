@@ -8,6 +8,10 @@ var prompt: Label
 var subtitle: Label
 var note_root: Control
 var note_text: Label
+var note_rich: RichTextLabel
+var thought_label: Label
+var title_label: Label
+var _thought_t := 0.0
 var _reading := false
 var _sub_t := 0.0
 var _prompt_alpha := 0.0
@@ -77,6 +81,38 @@ func _build_note() -> void:
 	note_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	paper.add_child(note_text)
+	note_rich = RichTextLabel.new()
+	note_rich.bbcode_enabled = true
+	note_rich.fit_content = false
+	note_rich.scroll_active = false
+	note_rich.add_theme_font_override("normal_font", f)
+	var fi := SystemFont.new()
+	fi.font_names = PackedStringArray(["Segoe Script", "Brush Script MT", "Georgia", "Times New Roman", "serif"])
+	fi.font_italic = true
+	note_rich.add_theme_font_override("italics_font", fi)
+	note_rich.add_theme_font_size_override("normal_font_size", 23)
+	note_rich.add_theme_font_size_override("italics_font_size", 22)
+	note_rich.add_theme_color_override("default_color", Color(0.16, 0.18, 0.4))
+	note_rich.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	note_rich.visible = false
+	paper.add_child(note_rich)
+	thought_label = Label.new()
+	thought_label.add_theme_font_size_override("font_size", 19)
+	thought_label.add_theme_color_override("font_color", Color(0.85, 0.84, 0.8, 0.9))
+	thought_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	thought_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(thought_label)
+	title_label = Label.new()
+	var tf := SystemFont.new()
+	tf.font_names = PackedStringArray(["Georgia", "Times New Roman", "serif"])
+	title_label.add_theme_font_override("font", tf)
+	title_label.add_theme_font_size_override("font_size", 26)
+	title_label.add_theme_color_override("font_color", Color(0.75, 0.73, 0.68))
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_label.modulate.a = 0.0
+	add_child(title_label)
 
 
 func _layout() -> void:
@@ -93,6 +129,12 @@ func _layout() -> void:
 	paper.rotation = deg_to_rad(-0.8)
 	note_text.position = Vector2(46, 50)
 	note_text.size = Vector2(pw - 92, ph - 100)
+	note_rich.position = Vector2(46, 50)
+	note_rich.size = Vector2(pw - 92, ph - 100)
+	thought_label.position = Vector2(0, s.y - 170)
+	thought_label.size = Vector2(s.x, 30)
+	title_label.position = Vector2(0, 0)
+	title_label.size = s
 
 
 func _process(delta: float) -> void:
@@ -100,6 +142,9 @@ func _process(delta: float) -> void:
 	var want := 0.0 if _prompt_target == "" or _reading else 0.75
 	_prompt_alpha = move_toward(_prompt_alpha, want, delta * 4.0)
 	prompt.modulate.a = _prompt_alpha
+	if _thought_t > 0.0:
+		_thought_t -= delta
+		thought_label.modulate.a = clampf(_thought_t, 0.0, 1.0)
 	if _sub_t > 0.0:
 		_sub_t -= delta
 		if _sub_t <= 0.0:
@@ -130,7 +175,31 @@ func clear_subtitle() -> void:
 	_sub_t = 0.0
 
 
+func thought(text: String, dur := 2.6) -> void:
+	thought_label.text = text
+	_thought_t = dur
+
+
+func title_card(text: String) -> void:
+	title_label.text = text
+	var tw := create_tween()
+	tw.tween_property(title_label, "modulate:a", 0.85, 1.0)
+	tw.tween_interval(1.4)
+	tw.tween_property(title_label, "modulate:a", 0.0, 1.2)
+
+
+func show_list(bbcode: String) -> void:
+	note_rich.text = bbcode
+	note_rich.visible = true
+	note_text.visible = false
+	note_root.visible = true
+	_reading = true
+	dot.visible = false
+
+
 func show_note(text: String) -> void:
+	note_rich.visible = false
+	note_text.visible = true
 	note_text.text = text
 	note_root.visible = true
 	_reading = true

@@ -29,8 +29,15 @@ func _ready() -> void:
 	add_child(Hud.new())
 	add_child(PauseMenu.new())
 	add_child(AmbientActivityManager.new())
+	add_child(FigurePool.new())
+	add_child(CultEvidence.new())
+	add_child(TaskManager.new())
 	director = EventDirector.new()
 	add_child(director)
+	add_child(ScareDirector.new())
+	var nights := NightManager.new()
+	add_child(nights)
+	nights.begin()
 	if GameManager.dev_mode:
 		add_child(DebugEventPanel.new())
 

@@ -83,6 +83,8 @@ func _apply() -> void:
 			sound.stream = AudioManager.stream("tv_tone")
 			sound.volume_db = AudioManager.db("tv_tone")
 			sound.play()
+		5:
+			sound.stop()
 		4:
 			sound.stream = AudioManager.stream("distant_traffic")
 			sound.volume_db = AudioManager.db("distant_traffic") + 6.0

@@ -459,3 +459,86 @@ if __name__ == "__main__":
     calendar()
     window_glow()
     sky_noise()
+
+
+# ---------------------------------------------------------------- night 2+ additions
+def sigil(name="sigil", ink=(30, 24, 22), bg=None, size=256, width=6):
+    """The court's mark: a broken circle, a downward fork and three short bars.
+    Deliberately not a pentagram — something a neighbour could scratch quickly."""
+    im = Image.new("RGBA", (size, size), (0, 0, 0, 0) if bg is None else bg)
+    d = ImageDraw.Draw(im)
+    c = size // 2
+    r = int(size * 0.36)
+    d.arc([c - r, c - r, c + r, c + r], 110, 430, fill=ink + (255,), width=width)
+    d.line([(c, c - r + 10), (c, c + 8)], fill=ink + (255,), width=width)
+    d.line([(c, c + 8), (c - int(r * 0.55), c + int(r * 0.75))], fill=ink + (255,), width=width)
+    d.line([(c, c + 8), (c + int(r * 0.55), c + int(r * 0.75))], fill=ink + (255,), width=width)
+    for k in range(3):
+        y = c - int(r * 0.45) + k * int(r * 0.22)
+        d.line([(c - int(r * 0.28), y), (c - int(r * 0.12), y)], fill=ink + (255,), width=max(2, width - 2))
+    im = im.filter(ImageFilter.GaussianBlur(0.8))
+    im.save(os.path.join(OUT, name + ".png"))
+    print("tex", name)
+
+
+def photo_cult():
+    """Faded 1970s snapshot: pale robed figures in a ring holding candles, at dusk."""
+    W, H = 320, 240
+    y = np.linspace(0, 1, H)[:, None, None]
+    img = np.array([70, 60, 70])[None, None] * (1 - y) + np.array([40, 34, 30])[None, None] * y
+    img = np.repeat(img, W, 1).astype(float)
+    im = Image.fromarray(img.astype(np.uint8))
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 170, W, H], fill=(36, 40, 30))
+    r = np.random.default_rng(55)
+    for k in range(9):
+        x = 30 + k * 32 + r.integers(-6, 6)
+        h = r.integers(70, 92)
+        top = 190 - h
+        d.ellipse([x - 9, top - 18, x + 9, top + 2], fill=(150, 140, 125))
+        d.polygon([(x - 16, 196), (x - 9, top), (x + 9, top), (x + 16, 196)], fill=(178, 170, 150))
+        d.ellipse([x - 3, top + 30, x + 3, top + 36], fill=(255, 220, 140))
+    d.ellipse([140, 182, 180, 196], fill=(20, 18, 16))
+    im = im.filter(ImageFilter.GaussianBlur(2.2))
+    arr = np.array(im).astype(float)
+    arr = arr * np.array([1.05, 0.95, 0.75]) + 20
+    arr += (np.random.default_rng(56).random(arr.shape[:2])[..., None] - 0.5) * 22
+    arr[:8, :] = 225
+    arr[-8:, :] = 225
+    arr[:, :8] = 225
+    arr[:, -8:] = 225
+    Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).save(os.path.join(OUT, "photo_cult.png"))
+    print("tex photo_cult")
+
+
+def photo_altered():
+    """photo_5 again, but somebody stands at the back who wasn't there."""
+    im = Image.open(os.path.join(OUT, "photo_5.png")).convert("RGB")
+    d = ImageDraw.Draw(im)
+    x = 205
+    d.ellipse([x - 13, 110, x + 13, 140], fill=(14, 12, 14))
+    d.rounded_rectangle([x - 24, 138, x + 24, 300], 12, fill=(12, 10, 12))
+    im = im.filter(ImageFilter.GaussianBlur(1.6))
+    im.save(os.path.join(OUT, "photo_5b.png"))
+    print("tex photo_5b")
+
+
+def silhouette():
+    """Figure standing behind a lit curtain (alpha mask, used in neighbour windows)."""
+    W, H = 128, 128
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([52, 18, 76, 46], fill=(10, 8, 8, 235))
+    d.rounded_rectangle([40, 44, 88, 140], 14, fill=(10, 8, 8, 235))
+    d.rectangle([58, 40, 70, 50], fill=(10, 8, 8, 235))
+    im = im.filter(ImageFilter.GaussianBlur(3.0))
+    im.save(os.path.join(OUT, "silhouette.png"))
+    print("tex silhouette")
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "night":
+    sigil()
+    sigil("sigil_chalk", (205, 200, 190), None, 256, 7)
+    photo_cult()
+    photo_altered()
+    silhouette()

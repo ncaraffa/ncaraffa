@@ -179,16 +179,18 @@ func _player_lot() -> void:
 			B.cyl(self, 0.06, 0.05, 0.06, p + Vector3(0, 0.34, 0), Mats.emissive(Color(1.0, 0.85, 0.6), 3.0), false, Vector3.ZERO, 8)
 			if i % 2 == 0:
 				B.omni(self, p + Vector3(0, 0.3, 0), Color(1.0, 0.8, 0.55), 0.25, 2.2, false)
-	# mailbox
-	var mbn := B.node(self, "Mailbox", Vector3(-7.2, 0, -17.4))
-	B.box(mbn, Vector3(0.08, 1.05, 0.08), Vector3(0, 0.52, 0), Mats.m("wood_dark"), true)
-	B.box(mbn, Vector3(0.24, 0.22, 0.48), Vector3(0, 1.15, 0), Mats.color(Color(0.18, 0.22, 0.2), 0.4, 0.5))
-	B.label(mbn, "14", Vector3(0.123, 1.15, 0), 0.003, Color(0.9, 0.88, 0.8), Vector3(0, 90, 0), 32)
-	# trash bins by the garage
+	# mailbox (chore: the mail) and wheelie bins (chore: the trash)
+	var mb := Mailbox.new()
+	mb.name = "PlayerMailbox"
+	add_child(mb)
+	mb.position = Vector3(-7.2, 0, -17.4)
+	mb.setup("mailbox")
 	for i in 2:
-		var t := B.node(self, "Bin", Vector3(11.6 + i * 0.75, 0, -26.2))
-		B.box(t, Vector3(0.6, 1.0, 0.7), Vector3(0, 0.5, 0), Mats.color(Color(0.12, 0.2, 0.14) if i == 0 else Color(0.15, 0.2, 0.32), 0.6), true)
-		B.box(t, Vector3(0.64, 0.05, 0.74), Vector3(0, 1.02, 0), Mats.color(Color(0.1, 0.15, 0.1), 0.6))
+		var bin := OutdoorBin.new()
+		bin.name = "Bin%d" % i
+		add_child(bin)
+		bin.position = Vector3(11.6 + i * 0.75, 0, -26.2)
+		bin.setup("bin_%d" % i, Color(0.12, 0.2, 0.14) if i == 0 else Color(0.15, 0.2, 0.32))
 	# flower bed + bushes in front of the house
 	B.box(self, Vector3(9.0, 0.06, 1.2), Vector3(-4.0, 0.03, -26.3), Mats.m("mulch"))
 	for x: float in [-10.0, -8.5, -2.6, -1.0, 1.0, 2.6]:
@@ -280,10 +282,10 @@ func _fence_gate_posts(a: Vector3, b: Vector3) -> void:
 # ------------------------------------------------------------------ neighbours
 const FAMILIES := [
 	# phi, family, params
-	[56.0, "Whitcomb", {"siding": "siding_blue", "garage": -1, "w": 13.0, "d": 9.5, "door_x": 1.6, "door_col": Color(0.12, 0.18, 0.28), "shutters": true, "seed": 3, "front_windows": 3, "porch": false, "rise": 2.1, "ridge_x": true}],
-	[118.0, "Pruitt", {"siding": "siding_yellow", "garage": 1, "w": 12.0, "d": 9.0, "door_x": -1.2, "door_col": Color(0.4, 0.1, 0.08), "seed": 4, "front_windows": 2, "porch": true, "rise": 1.8, "ridge_x": true}],
-	[242.0, "Ocampo", {"siding": "siding_green", "garage": -1, "w": 13.5, "d": 9.5, "door_x": 0.5, "door_col": Color(0.25, 0.2, 0.15), "seed": 5, "front_windows": 3, "porch": true, "brick": true, "rise": 2.2, "ridge_x": true}],
-	[304.0, "Leland", {"siding": "siding_gray", "garage": 1, "w": 12.5, "d": 9.0, "door_x": -2.0, "door_col": Color(0.6, 0.55, 0.45), "shutters": true, "shutter_col": Color(0.3, 0.1, 0.08), "seed": 6, "front_windows": 3, "porch": false, "rise": 2.6, "ridge_x": false}],
+	[56.0, "Whitcomb", {"number": 9, "siding": "siding_blue", "garage": -1, "w": 13.0, "d": 9.5, "door_x": 1.6, "door_col": Color(0.12, 0.18, 0.28), "shutters": true, "seed": 3, "front_windows": 3, "porch": false, "rise": 2.1, "ridge_x": true}],
+	[118.0, "Pruitt", {"number": 12, "siding": "siding_yellow", "garage": 1, "w": 12.0, "d": 9.0, "door_x": -1.2, "door_col": Color(0.4, 0.1, 0.08), "seed": 4, "front_windows": 2, "porch": true, "rise": 1.8, "ridge_x": true}],
+	[242.0, "Ocampo", {"number": 16, "siding": "siding_green", "garage": -1, "w": 13.5, "d": 9.5, "door_x": 0.5, "door_col": Color(0.25, 0.2, 0.15), "seed": 5, "front_windows": 3, "porch": true, "brick": true, "rise": 2.2, "ridge_x": true}],
+	[304.0, "Leland", {"number": 6, "siding": "siding_gray", "garage": 1, "w": 12.5, "d": 9.0, "door_x": -2.0, "door_col": Color(0.6, 0.55, 0.45), "shutters": true, "shutter_col": Color(0.3, 0.1, 0.08), "seed": 6, "front_windows": 3, "porch": false, "rise": 2.6, "ridge_x": false}],
 ]
 const ROAD_HOUSES := [
 	# x side, z, family, params

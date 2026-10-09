@@ -32,6 +32,9 @@ static func box(parent: Node, size: Vector3, pos: Vector3, mat: Material, collid
 	var mi := MeshInstance3D.new()
 	mi.mesh = _box_mesh(size)
 	mi.material_override = mat
+	if mat is BaseMaterial3D and mat.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+		# glass lets light through: lit rooms spill onto the lawn, porch lights reach inside
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	if collide:
 		var body := StaticBody3D.new()
 		body.collision_layer = LAYER_WORLD

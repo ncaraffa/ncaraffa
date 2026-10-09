@@ -9,6 +9,7 @@ var returned := false
 
 
 func _init() -> void:
+	intensity = 0
 	id = "car"
 	title = "The car"
 	resources = ["street_traffic"]

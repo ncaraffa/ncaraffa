@@ -3,6 +3,7 @@ extends MysteryEvent
 
 
 func _init() -> void:
+	intensity = 1
 	id = "chair"
 	title = "The chair"
 	resources = ["kitchen_chairs"]

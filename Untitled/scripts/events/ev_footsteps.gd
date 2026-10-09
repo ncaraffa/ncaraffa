@@ -13,6 +13,7 @@ var surface := "wood"
 
 
 func _init() -> void:
+	intensity = 2
 	id = "footsteps"
 	title = "Footsteps"
 	resources = ["footsteps"]

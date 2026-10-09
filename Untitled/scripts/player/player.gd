@@ -32,6 +32,9 @@ var focus_target: Node = null    # e.g. the computer
 var _focus_tween: Tween
 var _cam_home := Transform3D()
 var controls_enabled := true
+var sleeping := false
+var _shake_t := 0.0
+var _shake_amt := 0.0
 
 
 func _ready() -> void:
@@ -80,7 +83,7 @@ func _hud() -> Node:
 
 func is_busy() -> bool:
 	var hud = _hud()
-	return focus_target != null or (hud != null and hud.is_reading())
+	return sleeping or focus_target != null or (hud != null and hud.is_reading())
 
 
 # ------------------------------------------------------------------ input
@@ -102,10 +105,19 @@ func _unhandled_input(event: InputEvent) -> void:
 	if get_tree().paused:
 		return
 	var hud = _hud()
+	if sleeping:
+		return
 	if hud and hud.is_reading():
-		if event.is_action_pressed("interact") or event.is_action_pressed("pause"):
+		if event.is_action_pressed("interact") or event.is_action_pressed("pause") or event.is_action_pressed("notes"):
 			hud.close_note()
 			get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("notes") and WorldState.get_state("player/has_list", false) and focus_target == null:
+		var tm = WorldState.get_obj("tasks")
+		if hud and tm:
+			AudioManager.play_ui("paper", -4.0)
+			hud.show_list(tm.list_bbcode())
+		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and focus_target == null:
 		var sens: float = GameManager.settings.mouse_sensitivity
@@ -121,6 +133,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _do_interact() -> void:
 	if held:
+		# some things take what you are carrying (the trash bag into the bin)
+		if looked_at and is_instance_valid(looked_at) and looked_at.has_method("accepts") and looked_at.accepts(held):
+			looked_at.interact(self)
+			return
 		drop()
 		return
 	if looked_at and is_instance_valid(looked_at):
@@ -212,7 +228,12 @@ func _head_motion(delta: float, speed: float, running: bool, crouch: bool) -> vo
 		amp = 0.01
 	var bob_y: float = sin(_bob_t * 2.0) * amp * clampf(speed, 0.0, 1.0)
 	var bob_x: float = cos(_bob_t) * amp * 0.6 * clampf(speed, 0.0, 1.0)
-	head.position = Vector3(bob_x, _eye + bob_y, 0)
+	var sh := Vector3.ZERO
+	if _shake_t > 0.0:
+		_shake_t -= delta
+		var k: float = _shake_amt * clampf(_shake_t * 3.0, 0.0, 1.0)
+		sh = Vector3(randf_range(-k, k), randf_range(-k, k), 0.0)
+	head.position = Vector3(bob_x, _eye + bob_y, 0) + sh
 
 
 func _surface() -> String:
@@ -281,7 +302,9 @@ func _update_interaction() -> void:
 			depth += 1
 	looked_at = found
 	if hud:
-		if held:
+		if held and found and found.has_method("accepts") and found.accepts(held):
+			hud.set_prompt(found.get_prompt())
+		elif held:
 			hud.set_prompt("Put down")
 		elif found:
 			hud.set_prompt(found.get_prompt())
@@ -317,6 +340,12 @@ func _update_held(_delta: float) -> void:
 		return
 	held.linear_velocity = diff * 14.0
 	held.angular_velocity = held.angular_velocity.lerp(Vector3.ZERO, 0.2)
+
+
+## A short physical jolt of the view (scares). Small amplitudes only.
+func shake(amount: float, dur := 0.35) -> void:
+	_shake_amt = clampf(amount, 0.0, 0.12)
+	_shake_t = dur
 
 
 # ------------------------------------------------------------------ focus (computer)

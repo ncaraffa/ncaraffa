@@ -109,6 +109,7 @@ func _setup_buses() -> void:
 	_add_bus("Horror", "Master", [hcomp])
 	_add_bus("Music", "Master")
 	_add_bus("UI", "Master")
+	GameManager.apply_settings.call_deferred()
 
 
 func _new_lpf(bus_name: String) -> AudioEffectLowPassFilter:
@@ -302,8 +303,12 @@ func stop_all() -> void:
 
 ## Smoothly fade the world mix (sleep transition). Master stays the user's.
 func fade_world(to_db: float, secs: float) -> void:
+	var trims := {"Ambience": "ambience_volume", "SFX": "sfx_volume", "Horror": "horror_volume"}
 	for b in ["Ambience", "SFX", "Horror", "Music"]:
 		var idx := AudioServer.get_bus_index(b)
 		var from := AudioServer.get_bus_volume_db(idx)
+		var target := to_db
+		if to_db >= 0.0 and trims.has(b):
+			target = linear_to_db(max(0.0001, float(GameManager.settings[trims[b]])))
 		var tw := create_tween()
-		tw.tween_method(func(v): AudioServer.set_bus_volume_db(idx, v), from, to_db, secs)
+		tw.tween_method(func(v): AudioServer.set_bus_volume_db(idx, v), from, target, secs)

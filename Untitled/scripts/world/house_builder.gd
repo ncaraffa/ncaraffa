@@ -117,6 +117,22 @@ func wall(axis: String, c: float, u0: float, u1: float, neg: Array, pos: Array, 
 						B.box(structure, Vector3(length, 0.09, 0.016), Vector3(mid, 0.045, c + bo), Mats.m("trim"))
 					else:
 						B.box(structure, Vector3(0.016, 0.09, length), Vector3(c + bo, 0.045, mid), Mats.m("trim"))
+	# jambs: line the sides and head of door openings (no more raw wall edges)
+	for o in openings:
+		if o.b > 0.05 or o.w > 2.0:
+			continue
+		var jt := thick + 0.01
+		var hw2: float = o.w / 2.0
+		var jy: float = (o.t + max(o.b, 0.0)) / 2.0
+		var jh: float = o.t - max(o.b, 0.0)
+		if axis == "x":
+			B.box(structure, Vector3(0.025, jh, jt), Vector3(o.c - hw2 + 0.0125, jy, c), Mats.m("trim"))
+			B.box(structure, Vector3(0.025, jh, jt), Vector3(o.c + hw2 - 0.0125, jy, c), Mats.m("trim"))
+			B.box(structure, Vector3(o.w, 0.025, jt), Vector3(o.c, o.t - 0.0125, c), Mats.m("trim"))
+		else:
+			B.box(structure, Vector3(jt, jh, 0.025), Vector3(c, jy, o.c - hw2 + 0.0125), Mats.m("trim"))
+			B.box(structure, Vector3(jt, jh, 0.025), Vector3(c, jy, o.c + hw2 - 0.0125), Mats.m("trim"))
+			B.box(structure, Vector3(jt, 0.025, o.w), Vector3(c, o.t - 0.0125, o.c), Mats.m("trim"))
 	# casing trim around door openings on interior faces
 	for o in openings:
 		if o.b > 0.05:
@@ -269,7 +285,7 @@ func _deadbolt(d: Door, inside_sign: float) -> void:
 
 
 # ================================================================== windows
-func window(axis: String, c: float, center: float, w: float, b: float, t: float, thick := EXT, shutters := false) -> void:
+func window(axis: String, c: float, center: float, w: float, b: float, t: float, thick := EXT, shutters := false, lower_glass := true) -> void:
 	var h := t - b
 	var cy := (b + t) / 2.0
 	var root := B.node(structure, "Window")
@@ -287,7 +303,11 @@ func window(axis: String, c: float, center: float, w: float, b: float, t: float,
 	# sash: two panes, middle rail, muntins
 	B.box(root, Vector3(w - fw * 2, 0.04, 0.05), Vector3(0, 0, 0), trim)
 	B.box(root, Vector3(0.025, h - fw * 2, 0.03), Vector3(0, 0, 0.0), trim)
-	B.box(root, Vector3(w - fw * 2, h - fw * 2, 0.006), Vector3(0, 0, 0), Mats.glass())
+	if lower_glass:
+		B.box(root, Vector3(w - fw * 2, h - fw * 2, 0.006), Vector3(0, 0, 0), Mats.glass())
+	else:
+		# the lower pane belongs to a sliding sash (WindowSash)
+		B.box(root, Vector3(w - fw * 2, h / 2.0 - fw, 0.006), Vector3(0, h / 4.0, 0), Mats.glass())
 	B.collider(root, Vector3(w, h, 0.06), Vector3.ZERO)
 	# sills
 	B.box(root, Vector3(w + 0.12, 0.035, 0.14), Vector3(0, -h / 2 - 0.017, thick / 2 + 0.03), trim)
@@ -298,18 +318,30 @@ func window(axis: String, c: float, center: float, w: float, b: float, t: float,
 			B.box(root, Vector3(w * 0.42, h + 0.08, 0.03), Vector3(s * (w / 2 + w * 0.21 + 0.04), 0, thick / 2 + 0.03), sm)
 
 
+func _sash(id: String, center: Vector3, rot_y: float, w: float, h: float) -> void:
+	var ws := WindowSash.new()
+	ws.name = "Sash_" + id
+	interior.add_child(ws)
+	ws.position = center + Vector3(0, 0, 0.0)
+	ws.rotation_degrees.y = rot_y
+	ws.setup(id, w - 0.1, h - 0.1)
+
+
 func _windows() -> void:
 	window("x", 0.0, 2.1, 1.1, 0.9, 2.1)
 	window("x", 0.0, 6.4, 0.6, 1.5, 2.05)
 	window("x", 0.0, 9.3, 1.4, 0.9, 2.1)
-	window("x", 0.0, 12.0, 1.0, 1.05, 2.05)
-	window("x", 11.0, 2.1, 1.2, 0.9, 2.1, EXT, true)
-	window("x", 11.0, 9.9, 1.5, 0.9, 2.1, EXT, true)
+	window("x", 0.0, 12.0, 1.0, 1.05, 2.05, EXT, false, false)
+	window("x", 11.0, 2.1, 1.2, 0.9, 2.1, EXT, true, false)
+	window("x", 11.0, 9.9, 1.5, 0.9, 2.1, EXT, true, false)
 	window("x", 11.0, 13.6, 1.5, 0.9, 2.1, EXT, true)
 	window("z", 0.0, 1.4, 1.0, 0.9, 2.1)
 	window("z", 0.0, 8.6, 1.0, 0.9, 2.1)
 	window("x", 2.0, 20.5, 0.8, 1.2, 1.9, 0.2)
 	window("z", 22.5, 6.5, 0.8, 1.2, 1.9, 0.2)
+	_sash("win_kitchen", Vector3(12.0, 1.55, 0.0), 0.0, 1.0, 1.0)
+	_sash("win_living", Vector3(9.9, 1.5, 11.0), 180.0, 1.5, 1.2)
+	_sash("win_b2", Vector3(2.1, 1.5, 11.0), 180.0, 1.2, 1.2)
 	# front door has a small glass light above it (transom)
 	B.box(structure, Vector3(0.93, 0.02, 0.26), Vector3(5.9, 2.13, 11.0), Mats.m("trim"))
 
@@ -379,7 +411,8 @@ func _lights_and_switches() -> void:
 	var L := interior
 	Props.ceiling_light(L, Vector3(2.1, H, 2.5), "b1_ceiling", false, 1.5, 6.5, true)
 	Props.ceiling_light(L, Vector3(2.1, H, 8.0), "b2_ceiling", false, 1.5, 6.5, true)
-	Props.ceiling_light(L, Vector3(4.9, H, 5.2), "hall_ceiling", true, 0.9, 5.5, true)
+	Props.ceiling_light(L, Vector3(4.9, H, 5.2), "hall_ceiling", true, 1.25, 6.5, true)
+	Props.ceiling_light(L, Vector3(4.9, H, 7.5), "hall_ceiling_b", false, 0.6, 4.0, false)
 	Props.ceiling_light(L, Vector3(5.9, H, 1.4), "bath_ceiling", false, 1.3, 5.0, false)
 	Props.wall_sconce(L, Vector3(7.52, 2.1, 1.9), -90, "bath_vanity", false, 0.7)
 	Props.ceiling_light(L, Vector3(6.6, H, 4.2), "laundry_bulb", false, 1.1, 4.5, false, 1)
@@ -391,12 +424,22 @@ func _lights_and_switches() -> void:
 	Props.wall_sconce(L, Vector3(12.0, 2.25, 0.13), 0, "kitchen_sink", true, 1.0)
 	Props.ceiling_light(L, Vector3(19.3, H, 6.5), "garage_tube", false, 2.0, 8.0, true, 3)
 	Props.wall_sconce(L, Vector3(6.75, 1.95, 11.13), 0, "porch_front", true, 1.0, true, Color(1.0, 0.8, 0.55))
-	Props.wall_sconce(L, Vector3(14.45, 1.95, -0.13), 180, "porch_back", true, 0.8, false, Color(1.0, 0.78, 0.52))
+	Props.wall_sconce(L, Vector3(14.45, 1.95, -0.13), 180, "porch_back", true, 1.0, true, Color(1.0, 0.78, 0.52))
 	Props.wall_sconce(L, Vector3(16.35, 2.2, 11.13), 0, "garage_flood", false, 1.2, false, Color(0.95, 0.9, 0.8))
+	# backyard flood light under the eave: the yard is never pitch black
+	var yf := LightFixture.new()
+	yf.name = "YardFlood"
+	L.add_child(yf)
+	yf.position = Vector3(8.0, 2.35, -0.2)
+	B.box(yf, Vector3(0.22, 0.14, 0.12), Vector3(0, 0, -0.06), Mats.m("metal_dark"))
+	var yg := B.box(yf, Vector3(0.18, 0.1, 0.01), Vector3(0, -0.01, -0.125), Mats.m("plastic_white"))
+	yf.add_glow(yg)
+	yf.add_light(B.spot(yf, Vector3(0, -0.05, -0.2), Vector3(-28, 180, 0), Color(0.95, 0.9, 0.78), 2.2, 26.0, 58.0, true))
+	yf.setup("yard_flood", true, Color(0.95, 0.9, 0.78), 3.0)
 
 	_switch("sw_b1", Vector3(4.135, 1.2, 3.5), -90, ["b1_ceiling"])
 	_switch("sw_b2", Vector3(4.135, 1.2, 6.7), -90, ["b2_ceiling"])
-	_switch("sw_hall", Vector3(4.265, 1.2, 7.6), 90, ["hall_ceiling"])
+	_switch("sw_hall", Vector3(4.265, 1.2, 7.6), 90, ["hall_ceiling", "hall_ceiling_b"])
 	_switch("sw_bath", Vector3(5.5, 1.2, 2.735), 180, ["bath_ceiling", "bath_vanity"])
 	_switch("sw_laundry", Vector3(5.665, 1.2, 4.85), 90, ["laundry_bulb"])
 	_switch("sw_closet", Vector3(5.665, 1.2, 6.35), 90, ["closet_bulb"])
@@ -405,7 +448,7 @@ func _lights_and_switches() -> void:
 	_switch("sw_living", Vector3(7.665, 1.2, 8.35), 90, ["living_ceiling"])
 	_switch("sw_dining", Vector3(7.95, 1.2, 6.135), 180, ["dining_chandelier"])
 	_switch("sw_kitchen", Vector3(11.065, 1.2, 5.0), 90, ["kitchen_ceiling"])
-	_switch("sw_backporch", Vector3(12.85, 1.25, 0.135), 0, ["porch_back"])
+	_switch("sw_backporch", Vector3(12.85, 1.25, 0.135), 0, ["porch_back", "yard_flood"])
 	_switch("sw_garage", Vector3(16.12, 1.0, 4.0), 90, ["garage_tube"])
 	_switch("sw_garage_flood", Vector3(16.12, 1.0, 3.85), 90, ["garage_flood"])
 	Props.smoke_detector(L, Vector3(4.9, H, 3.9))
@@ -445,6 +488,17 @@ func _note(id: String, text: String, pos: Vector3, rot := Vector3.ZERO, size := 
 func _bedroom1() -> void:
 	var R := interior
 	Props.bed(R, Vector3(0.15, 0, 3.5), 90, 1.4, 2.0, "fabric_red")
+	var bed := Bed.new()
+	bed.name = "BedSleep"
+	R.add_child(bed)
+	bed.position = Vector3(1.15, 0, 3.5)
+	bed.setup("bed", Vector3(2.0, 0.7, 1.4))
+	var pad := Notepad.new()
+	pad.name = "Notepad"
+	R.add_child(pad)
+	pad.position = Vector3(0.36, 0.552, 2.33)
+	pad.rotation_degrees.y = 72
+	pad.setup("notepad")
 	Props.nightstand(R, Vector3(0.35, 0, 2.45), 90)
 	Props.table_lamp(R, Vector3(0.35, 0.55, 2.5), "b1_lamp", true, Color(0.95, 0.88, 0.72), 1.15, true)
 	var ac := B.node(R, "AlarmClock", Vector3(0.42, 0.55, 2.32), Vector3(0, 90, 0))
@@ -453,7 +507,7 @@ func _bedroom1() -> void:
 	ac.add_child(clk)
 	clk.position = Vector3(0, 0.04, 0.036)
 	clk.setup_digital("clock_bedroom", Color(1.0, 0.15, 0.08), 0.0011)
-	_note("b1_notepad", "couldn't sleep.\n\na car went around the court twice.\nslow. headlights on the ceiling both times.\n\nprobably someone lost.", Vector3(0.28, 0.551, 2.62), Vector3(0, 80, 0), Vector2(0.1, 0.14))
+	_note("b1_notepad", "couldn't sleep.\n\na car went around the court twice.\nslow. headlights on the ceiling both times.\n\nprobably someone lost.", Vector3(0.24, 0.551, 2.66), Vector3(0, 80, 0), Vector2(0.09, 0.12))
 	Props.wardrobe(R, Vector3(3.84, 0, 1.8), -90, 1.2, 2.0)
 	Props.desk(R, Vector3(2.75, 0, 4.64), 180, 1.1, 0.6)
 	var comp := Computer.new()
@@ -675,8 +729,27 @@ func _kitchen() -> void:
 	B.box(R, Vector3(0.3, 0.2, 0.22), Vector3(15.5, 1.0, 0.45), Mats.color(Color(0.75, 0.6, 0.3), 0.8))
 	B.box(R, Vector3(0.18, 0.28, 0.06), Vector3(15.7, 1.04, 0.7), Mats.color(Color(0.2, 0.3, 0.6), 0.8))
 	B.box(R, Vector3(0.5, 0.02, 0.35), Vector3(11.4, 0.91, 0.42), Mats.m("wood_light"), false, Vector3(0, 0, 0))
-	# trash can
-	B.cyl(R, 0.17, 0.15, 0.55, Vector3(11.3, 0.275, 1.2), Mats.color(Color(0.8, 0.8, 0.77), 0.5), true, Vector3.ZERO, 14)
+	# trash can (chore), dirty dishes + drying rack (chore), burner knob (chore)
+	var tc := TrashCan.new()
+	tc.name = "TrashCan"
+	R.add_child(tc)
+	tc.position = Vector3(11.3, 0, 1.2)
+	tc.setup("trash_can")
+	var rack := B.node(R, "DryingRack", Vector3(11.35, 0.92, 0.42))
+	B.box(rack, Vector3(0.42, 0.02, 0.3), Vector3(0, 0.0, 0), Mats.m("chrome"))
+	for i in 6:
+		B.box(rack, Vector3(0.006, 0.16, 0.26), Vector3(-0.18 + i * 0.072, 0.08, 0), Mats.m("chrome"))
+	var dd := DirtyDishes.new()
+	dd.name = "Dishes"
+	R.add_child(dd)
+	dd.position = Vector3(11.95, 0.77, 0.45)
+	dd.setup("dishes", rack)
+	var knob := StoveKnob.new()
+	knob.name = "StoveKnob"
+	R.add_child(knob)
+	knob.position = Vector3(15.25, 0.84, 1.53)
+	knob.rotation_degrees.y = -90
+	knob.setup("stove_knob", Vector3(-0.15, 0.075, 0.31))
 
 
 func _garage() -> void:
