@@ -1,0 +1,49 @@
+; Engine configuration file.
+; Untitled — first-person psychological horror (Godot 4.3, Forward+)
+
+config_version=5
+
+[application]
+
+config/name="Untitled"
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+boot_splash/bg_color=Color(0, 0, 0, 1)
+boot_splash/show_image=false
+config/icon="res://icon.svg"
+
+[audio]
+
+general/3d_panning_strength=0.8
+
+[autoload]
+
+GameManager="*res://scripts/core/game_manager.gd"
+WorldState="*res://scripts/core/world_state.gd"
+AudioManager="*res://scripts/core/audio_manager.gd"
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[physics]
+
+common/physics_ticks_per_second=60
+3d/default_gravity=9.8
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=1
+textures/default_filters/anisotropic_filtering_level=2
+lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=3
+lights_and_shadows/positional_shadow/atlas_size=8192
+anti_aliasing/quality/msaa_3d=1
+anti_aliasing/quality/screen_space_aa=1
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)
+environment/ssao/quality=1
+environment/glow/upscale_mode=1
