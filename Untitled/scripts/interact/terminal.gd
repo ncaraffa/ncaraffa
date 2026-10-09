@@ -123,7 +123,7 @@ func _process(delta: float) -> void:
 func handle_key(ev: InputEventKey) -> void:
 	if not ev.pressed or mode == Mode.OFF or mode == Mode.MESSAGE:
 		return
-	AudioManager.play_ui("key_%d" % (randi() % 3), -14.0)
+	AudioManager.play_ui("key_%d" % (randi() % 3))
 	var kc := ev.keycode
 	if kc == KEY_ENTER or kc == KEY_KP_ENTER:
 		_on_enter()

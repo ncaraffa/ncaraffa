@@ -31,6 +31,6 @@ func setup(id: String, note_text: String, size := Vector2(0.21, 0.28), paper_mat
 func interact(_player: Node) -> void:
 	var hud = WorldState.get_obj("hud")
 	if hud:
-		AudioManager.play_ui("paper", -8.0)
+		AudioManager.play_ui("paper")
 		hud.show_note(text)
 	WorldState.log_interaction("read", obj_id)

@@ -43,7 +43,7 @@ func _ready() -> void:
 	var cs := CollisionShape3D.new()
 	# a cylinder (flat bottom) makes stepping onto curbs/porches reliable
 	var cap := CylinderShape3D.new()
-	cap.radius = 0.28
+	cap.radius = 0.25
 	cap.height = 1.72
 	cs.shape = cap
 	cs.position.y = 0.86
@@ -60,8 +60,7 @@ func _ready() -> void:
 	head.add_child(camera)
 	_cam_home = camera.transform
 	steps = AudioStreamPlayer.new()
-	steps.bus = "World"
-	steps.volume_db = -13.0
+	steps.bus = "SFX"
 	add_child(steps)
 	_yaw = rotation.y
 	rotation = Vector3.ZERO
@@ -190,7 +189,7 @@ func _try_step(vel: Vector3, delta: float) -> void:
 	var col := KinematicCollision3D.new()
 	if test_move(moved, -up, col):
 		var landed := moved.translated(col.get_travel())
-		if col.get_normal().y > 0.7 and landed.origin.y - start.origin.y > 0.02:
+		if col.get_normal().y > 0.7 and landed.origin.y - start.origin.y > 0.004:
 			global_transform = landed
 			velocity.y = 0.0
 
@@ -236,22 +235,19 @@ func _surface() -> String:
 func _footstep(intensity: float) -> void:
 	var s := _surface()
 	var prefix := "step_wood"
-	var vol := -13.0
+	var vol := 0.0
 	match s:
 		"tile":
 			prefix = "step_tile"
-			vol = -15.0
 		"grass":
 			prefix = "step_grass"
-			vol = -11.0
 		"concrete", "asphalt":
 			prefix = "step_concrete"
-			vol = -14.0
 		"carpet":
 			prefix = "step_grass"
-			vol = -20.0
+			vol = -7.0
 	steps.stream = AudioManager.variant(prefix, 4)
-	steps.volume_db = vol + linear_to_db(intensity)
+	steps.volume_db = AudioManager.db(prefix) - 3.0 + vol + linear_to_db(intensity)
 	steps.pitch_scale = randf_range(0.92, 1.08)
 	steps.play()
 

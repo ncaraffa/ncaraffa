@@ -19,9 +19,12 @@ R = np.random.default_rng(4242)
 
 
 def save(name, x, peak=0.9, sr=SR):
+    """Every file is peak-normalised to -1 dBFS. Levels are set by the mixer in
+    the engine (AudioManager.MIX), never by baking quiet files."""
     x = np.asarray(x, float)
+    x = x - np.mean(x)
     m = np.max(np.abs(x)) + 1e-9
-    x = x / m * peak
+    x = x / m * 0.89
     data = (np.clip(x, -1, 1) * 32767).astype(np.int16)
     with wave.open(os.path.join(OUT, name + ".wav"), "wb") as w:
         w.setnchannels(1)
@@ -403,6 +406,200 @@ def animals():
     save("wind_chime", ch, 0.3)
 
 
+# ------------------------------------------------------------------ horror
+def _env(n, a, d):
+    """attack/decay envelope in seconds."""
+    e = np.ones(n)
+    na = max(1, int(a * SR))
+    e[:na] = np.linspace(0, 1, na) ** 0.5
+    e[na:] = np.exp(-np.arange(n - na) / SR / d)
+    return e
+
+
+def horror():
+    # stingers: a sharp transient (the jolt), a sub drop (the weight) and a
+    # dissonant metallic screech that decays into reverb (the after-image)
+    for i in range(3):
+        r = np.random.default_rng(1300 + i)
+        d = 3.2
+        tt = t(d)
+        n = len(tt)
+        sub = np.sin(2 * np.pi * np.cumsum(np.linspace(r.uniform(70, 90), 28, n)) / SR) * _env(n, 0.004, 0.55)
+        crack = hp(noise(d), 1500) * _env(n, 0.001, 0.05)
+        scr = np.zeros(n)
+        for k in range(5):
+            f0 = r.uniform(600, 1900)
+            f = f0 * (1 - 0.25 * tt / d) * (1 + 0.012 * np.sin(2 * np.pi * r.uniform(5, 11) * tt))
+            scr += signal.sawtooth(2 * np.pi * np.cumsum(f) / SR) * r.uniform(0.4, 1.0)
+        scr = bp(scr, 700, 4500) * _env(n, 0.01, r.uniform(0.5, 0.9))
+        body = bp(noise(d), 80, 400) * _env(n, 0.003, 0.25)
+        x = sub * 1.0 + crack * 0.9 + scr * 0.45 + body * 0.6
+        x = np.tanh(x * 1.6)
+        save(f"stinger_{i}", room(x, 0.6, 0.35, 3500)[: int(4.2 * SR)])
+    # short shriek for the TV / behind-you scares
+    d = 1.1
+    tt = t(d)
+    f = 900 + 500 * np.sin(2 * np.pi * 7 * tt) + 300 * tt
+    src = signal.sawtooth(2 * np.pi * np.cumsum(f) / SR) + 0.8 * noise(d)
+    v = bp(src, 900, 1400) + 0.8 * bp(src, 2200, 3200) + 0.4 * bp(src, 3500, 5000)
+    v = np.tanh(v * 3) * _env(len(tt), 0.005, 0.5)
+    save("shriek", room(v, 0.4, 0.3))
+    # TV scare burst: crushed static + shriek + sub
+    d = 1.4
+    st = np.sign(noise(d)) * 0.6 + bp(noise(d), 200, 8000)
+    burst = st * _env(len(st), 0.002, 0.6)
+    burst[: int(1.1 * SR)] += v[: int(1.1 * SR)] * 0.8
+    burst += np.sin(2 * np.pi * 45 * t(d)) * _env(len(st), 0.003, 0.4)
+    save("tv_scare", np.tanh(burst * 1.5))
+    # breathing very close: slow inhale / exhale through the nose and mouth
+    parts = []
+    for k in range(3):
+        r = np.random.default_rng(1400 + k)
+        for kind, dur in (("in", r.uniform(1.1, 1.5)), ("out", r.uniform(1.4, 1.9))):
+            n = int(dur * SR)
+            e = np.sin(np.linspace(0, np.pi, n)) ** (1.6 if kind == "in" else 1.1)
+            nz = noise(dur)
+            lo, hi = (500, 2600) if kind == "in" else (250, 1500)
+            b = bp(nz, lo, hi) + 0.3 * bp(nz, 2500, 5000) * (1 if kind == "in" else 0.3)
+            b *= e * (1 + 0.15 * np.sin(np.linspace(0, r.uniform(10, 25), n)))
+            parts += [b, np.zeros(int(r.uniform(0.15, 0.45) * SR))]
+    save("breath_close", np.concatenate(parts))
+    # whisper: noisy formant syllables, unintelligible
+    d = 2.6
+    n = int(d * SR)
+    w = np.zeros(n)
+    pos = 0
+    r = np.random.default_rng(1500)
+    while pos < n - int(0.3 * SR):
+        sl = int(r.uniform(0.12, 0.3) * SR)
+        f1, f2 = r.uniform(300, 800), r.uniform(1100, 2600)
+        nz = R.standard_normal(sl)
+        syl = bp(nz, f1 * 0.8, f1 * 1.2) + bp(nz, f2 * 0.85, f2 * 1.15) + 0.4 * hp(nz, 4000)
+        w[pos:pos + sl] += syl * np.sin(np.linspace(0, np.pi, sl))
+        pos += sl + int(r.uniform(0.03, 0.15) * SR)
+    save("whisper", room(w, 0.3, 0.3))
+    # palm slamming against a window: thump + glass ring + rattle
+    d = 2.2
+    tt = t(d)
+    n = len(tt)
+    thump_ = thump(85, d, 0.08, 0.9, 150, 2500)
+    ring = np.zeros(n)
+    for f, a in ((1830, 1.0), (2710, 0.7), (4120, 0.5), (5630, 0.3)):
+        ring += np.sin(2 * np.pi * f * tt) * a * _env(n, 0.001, 0.35)
+    rattle = bp(noise(d), 2000, 7000) * (np.abs(np.sin(2 * np.pi * 31 * tt)) > 0.9) * _env(n, 0.001, 0.18)
+    save("window_bang", room(thump_ + ring * 0.25 + rattle * 0.5, 0.3, 0.25))
+    # hard banging on a door (heavier than the polite knock)
+    out = np.zeros(int(2.4 * SR))
+    for k, tm in enumerate((0.0, 0.55, 1.1)):
+        th = thump(65, 0.6, 0.07, 1.0, 100, 2500) + 0.4 * thump(140, 0.6, 0.03, 0.6)
+        i0 = int(tm * SR)
+        out[i0:i0 + len(th)] += th[: len(out) - i0]
+    save("bang_door", room(out, 0.35, 0.35))
+    # distant chanting: layered slow syllables in a minor drone, far away
+    voices_ = []
+    for k, (voice, pitch) in enumerate((("mb-us1", "20"), ("mb-us3", "15"), ("mb-us2", "28"))):
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+            path = tf.name
+        try:
+            subprocess.run(["espeak-ng", "-v", voice, "-s", "70", "-p", pitch, "-a", "120",
+                            " ".join(["oh. ah. veh. nee. oh. ah. leh. oh."] * 4), "-w", path], check=True, capture_output=True)
+            with wave.open(path) as wv:
+                sr = wv.getframerate()
+                x = np.frombuffer(wv.readframes(wv.getnframes()), np.int16).astype(float) / 32768
+            x = signal.resample(x, int(len(x) * SR / sr))
+        except Exception:
+            x = np.zeros(SR * 8)
+        voices_.append(x)
+    L = max(len(v_) for v_ in voices_) + SR
+    mix_ = np.zeros(L)
+    for k, v_ in enumerate(voices_):
+        off = int(k * 0.07 * SR)
+        mix_[off:off + len(v_)] += v_
+    dr = np.zeros(L)
+    tt = np.arange(L) / SR
+    for f in (73.4, 87.3, 110.0):
+        dr += signal.sawtooth(2 * np.pi * f * tt) * 0.15
+    mix_ = lp(mix_ + lp(dr, 600) * 0.4, 1100, 4)
+    mix_ = room(mix_, 0.9, 0.6, 1200)
+    save("chant_far", loopable(mix_, 1.0))
+    # slow low swell (tension, used sparingly before something happens)
+    d = 9.0
+    tt = t(d)
+    sw = (np.sin(2 * np.pi * 41 * tt) + 0.6 * np.sin(2 * np.pi * 43.3 * tt) + 0.3 * lp(noise(d), 120))
+    sw *= np.sin(np.linspace(0, np.pi, len(tt))) ** 2
+    save("drone_swell", sw)
+    # quick footsteps of something running (barefoot, heavy)
+    out = np.zeros(int(1.6 * SR))
+    for k in range(6):
+        th = thump(75, 0.25, 0.03, 0.7, 120, 1800)
+        i0 = int(k * 0.19 * SR)
+        out[i0:i0 + len(th)] += th[: len(out) - i0] * (0.6 + 0.08 * k)
+    save("run_steps", room(out, 0.3, 0.3))
+    # electrical crackle / buzz
+    d = 6.0
+    tt = t(d)
+    bz = signal.sawtooth(2 * np.pi * 60 * tt) * 0.3 + 0.2 * signal.square(2 * np.pi * 120 * tt)
+    crk = (R.random(len(tt)) > 0.9995).astype(float)
+    crk = signal.lfilter([1.0], [1, -0.97], crk) * hp(noise(d), 2000)
+    save("elec_buzz", loopable(lp(bz, 3000) * 0.4 + crk * 0.8, 0.3))
+    # heartbeat (only after something happened, very low)
+    out = np.zeros(int(1.0 * SR))
+    for tm, a in ((0.0, 1.0), (0.24, 0.7)):
+        th = thump(48, 0.3, 0.06, 0.1, 40, 200)
+        i0 = int(tm * SR)
+        out[i0:i0 + len(th)] += th[: len(out) - i0] * a
+    save("heartbeat", out)
+
+
+# ------------------------------------------------------------------ chores / locks
+def chores():
+    lc = mix(thump(2600, 0.06, 0.004, 1.0, 2500, 9000), np.concatenate([np.zeros(int(0.05 * SR)), thump(1600, 0.08, 0.008, 1.0, 1500, 7000)]))
+    save("lock_click", lc)
+    out = np.zeros(int(0.7 * SR))
+    for k in range(5):
+        th = thump(r_ := 1200 + k * 90, 0.06, 0.006, 1.0, 1500, 8000)
+        i0 = int(k * 0.09 * SR)
+        out[i0:i0 + len(th)] += th[: len(out) - i0]
+    out += np.concatenate([thump(95, 0.3, 0.04, 0.5)[: int(0.3 * SR)], np.zeros(len(out) - int(0.3 * SR))])
+    save("door_rattle", room(out, 0.2, 0.2))
+    # ceramic clinks
+    for i in range(3):
+        r = np.random.default_rng(1600 + i)
+        d = 0.6
+        tt = t(d)
+        x = np.zeros(len(tt))
+        for f in (r.uniform(2200, 3200), r.uniform(4100, 5200), r.uniform(6500, 7500)):
+            x += np.sin(2 * np.pi * f * tt) * _env(len(tt), 0.001, r.uniform(0.05, 0.15))
+        save(f"dish_{i}", x + 0.2 * hp(noise(d), 3000) * _env(len(tt), 0.001, 0.01))
+    # scrubbing under water
+    d = 2.0
+    sc = bp(noise(d), 800, 6000) * (0.5 + 0.5 * np.abs(np.sin(2 * np.pi * 3.2 * t(d))))
+    save("scrub", sc * np.sin(np.linspace(0, np.pi, len(sc))) ** 0.3)
+    # plastic bag rustle
+    d = 1.4
+    rs = hp(noise(d), 1500) * (lp(np.abs(noise(d)), 25) * 5) ** 2
+    save("trash_bag", rs * adsr(len(rs), 0.05, 0.2))
+    save("bin_lid", room(thump(110, 0.5, 0.05, 0.9, 200, 3000), 0.3, 0.2))
+    # mailbox: little metal creak + clank
+    cr = creak(0.5, 900, 700, 0.3, 77) * 0.6
+    save("mailbox", np.concatenate([cr, thump(500, 0.25, 0.02, 1.0, 1000, 6000)]))
+    # sash window sliding
+    d = 0.9
+    sl = bp(noise(d), 300, 2500) * (0.6 + 0.4 * np.sin(np.linspace(0, 30, int(d * SR))) ** 2) * adsr(int(d * SR), 0.05, 0.15)
+    save("window_slide", np.concatenate([sl, thump(140, 0.25, 0.03, 0.6)]))
+    # stove knob + burner going out
+    save("stove_knob", np.concatenate([thump(1800, 0.05, 0.005, 1.0, 2000, 8000), bp(noise(0.5), 200, 2000) * _env(int(0.5 * SR), 0.01, 0.12)]))
+    d = 4.0
+    save("gas_hiss", loopable(bp(noise(d), 1500, 7000) * 0.5 + lp(noise(d), 300) * 0.3, 0.5))
+    # things falling over somewhere
+    out = np.zeros(int(1.6 * SR))
+    for k, tm in enumerate((0.0, 0.12, 0.31, 0.5)):
+        th = thump(np.random.default_rng(k).uniform(120, 400), 0.4, 0.04, 1.0, 400, 5000)
+        i0 = int(tm * SR)
+        out[i0:i0 + len(th)] += th[: len(out) - i0] * (1 - k * 0.2)
+    save("object_fall", room(out, 0.3, 0.3))
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
@@ -418,3 +615,5 @@ if __name__ == "__main__":
     appliances()
     vehicles()
     animals()
+    horror()
+    chores()

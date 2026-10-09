@@ -44,5 +44,5 @@ func set_open(value: bool, instant := false) -> void:
 		else:
 			create_tween().tween_property(p, "scale:x", s, 0.8).set_trans(Tween.TRANS_SINE)
 	if not instant:
-		AudioManager.play_3d("paper", global_position + Vector3(0, 1.5, 0), -16.0, 0.6, 2.0)
+		AudioManager.play_3d("paper", global_position + Vector3(0, 1.5, 0), -6.0, 0.6, -1.0, -1.0, "sfx")
 	WorldState.set_state("curtain/" + obj_id, value)

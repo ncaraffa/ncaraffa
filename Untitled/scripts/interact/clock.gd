@@ -31,7 +31,7 @@ func setup_analog(id: String, radius := 0.15, face_col := Color(0.92, 0.9, 0.84)
 	sec_hand = _hand(radius * 0.8, 0.003, Mats.color(Color(0.6, 0.1, 0.08)), 0.058)
 	B.cyl(self, 0.01, 0.01, 0.01, Vector3(0, 0, 0.06), ink, false, Vector3(90, 0, 0), 8)
 	if tick:
-		_tick = AudioManager.make_emitter(self, "clock_tick", Vector3(0, 0, 0.05), -22.0, 1.2, 6.0)
+		_tick = AudioManager.make_emitter(self, "clock_tick", Vector3(0, 0, 0.05))
 	_update()
 
 

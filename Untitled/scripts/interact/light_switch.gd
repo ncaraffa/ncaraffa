@@ -33,7 +33,7 @@ func interact(_player: Node) -> void:
 		var l = WorldState.get_obj(t)
 		if l:
 			l.set_on(new_state, true)
-	AudioManager.play_3d("switch_click", global_position, -8.0, randf_range(0.95, 1.08), 2.0)
+	AudioManager.play_3d("switch_click", global_position, 0.0, randf_range(0.95, 1.08))
 	WorldState.log_interaction("switch", obj_id)
 	_update_lever()
 

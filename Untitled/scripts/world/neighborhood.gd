@@ -418,8 +418,7 @@ func _lamp(p: Vector3, arm_dir: Vector3, shadow: bool) -> void:
 	var l := B.spot(n, Vector3(0, 5.9, 1.55), Vector3(-90, 0, 0), Color(1.0, 0.7, 0.42), 9.0, 15.0, 62.0, shadow)
 	l.spot_attenuation = 1.0
 	var halo := B.omni(n, Vector3(0, 5.6, 1.55), Color(1.0, 0.72, 0.45), 0.35, 7.0, false)
-	var buzz := AudioManager.make_emitter(n, "lamp_buzz", Vector3(0, 5.9, 1.55), -30.0, 1.0, 8.0)
-	buzz.bus = "Outdoor"
+	AudioManager.make_emitter(n, "lamp_buzz", Vector3(0, 5.9, 1.55), 0.0, -1.0, -1.0, true, "AmbOut")
 	lamps.append({"light": l, "halo": halo, "glow": glow, "energy": l.light_energy, "node": n})
 	_keepout.append({"center": Vector2(p.x, p.z), "half": Vector2(1.0, 1.0), "rot": 0.0})
 
@@ -566,8 +565,7 @@ func _trees() -> void:
 	# leaves rustling in a few places around the court
 	for k in 6:
 		var a := TAU * k / 6.0 + 0.4
-		var em := AudioManager.make_emitter(self, "leaves", polar(rad_to_deg(a), 40.0) + Vector3(0, 5, 0), -16.0, 8.0, 60.0)
-		em.bus = "Outdoor"
+		AudioManager.make_emitter(self, "leaves", polar(rad_to_deg(a), 40.0) + Vector3(0, 5, 0), 0.0, -1.0, -1.0, true, "AmbOut")
 
 
 # ------------------------------------------------------------------ boundary

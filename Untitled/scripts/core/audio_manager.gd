@@ -1,26 +1,69 @@
 extends Node
-## AudioManager — bus layout, sound library and spatial one-shots.
+## AudioManager — bus layout, central mix table, sound library, spatial sounds.
 ##
-## Buses:
-##   Master <- World <- Indoor  (low-passed while the player is outside)
-##                   <- Outdoor (low-passed while the player is inside)
-##                   <- Room    (reverb send used by the house Area3D)
-##   Master <- Phone (the handset), UI
-## Every positional sound picks Indoor/Outdoor from where it is emitted, so a
-## phone ringing inside sounds muffled from the street and vice versa.
+## Bus graph (all built at runtime):
+##   Master  [compressor -> hard limiter at -1 dB: protects ears/headphones]
+##     Ambience <- AmbIn / AmbOut      (room tone, crickets, wind, traffic)
+##     SFX      <- SFXIn / SFXOut, Room (reverb send), Phone (handset band-pass)
+##     Horror   [own compressor: impact without clipping]
+##     Music, UI
+## *In buses are low-passed while the player is outside the house, *Out buses
+## while the player is inside, so every sound is heard "through the walls".
+##
+## All audio files are peak-normalised (tools/gen_audio.py). Levels live here,
+## in MIX: [gain_db, unit_size_m, max_distance_m, category]. Call sites only pass
+## small relative offsets.
+
+const MIX := {
+	# foley
+	"step_wood": [-8.0, 3.0, 25.0, "sfx"], "step_tile": [-5.0, 3.0, 25.0, "sfx"],
+	"step_grass": [-5.0, 3.0, 25.0, "sfx"], "step_concrete": [-5.0, 3.0, 25.0, "sfx"],
+	"step_heavy": [-2.0, 4.0, 35.0, "sfx"],
+	"door_open": [9.0, 4.5, 35.0, "sfx"], "door_close": [-1.0, 5.0, 40.0, "sfx"], "door_creak": [-3.0, 4.0, 30.0, "sfx"],
+	"door_rattle": [0.0, 4.0, 30.0, "sfx"], "lock_click": [-1.0, 3.0, 20.0, "sfx"],
+	"knock": [2.0, 8.0, 70.0, "sfx"], "switch_click": [-2.0, 3.0, 20.0, "sfx"],
+	"phone_ring": [0.0, 9.0, 90.0, "sfx"], "phone_pickup": [-3.0, 3.0, 20.0, "sfx"], "phone_hangup": [-3.0, 3.0, 20.0, "sfx"],
+	"dial_tone": [-14.0, 1.0, 5.0, "sfx"], "line_hiss": [-18.0, 1.0, 5.0, "sfx"],
+	"voice_time": [-2.0, 1.0, 5.0, "sfx"], "voice_wrong": [-2.0, 1.0, 5.0, "sfx"], "voice_hello": [-2.0, 1.0, 5.0, "sfx"],
+	"voice_spell": [3.0, 14.0, 160.0, "horror"],
+	"tv_static": [-6.0, 4.0, 35.0, "sfx"], "tv_tone": [-22.0, 3.0, 25.0, "sfx"],
+	"crt_on": [-5.0, 3.0, 20.0, "sfx"], "crt_off": [-5.0, 3.0, 20.0, "sfx"], "computer_hum": [-18.0, 1.5, 8.0, "sfx"],
+	"key": [-6.0, 1.0, 5.0, "ui"], "paper": [-4.0, 2.0, 10.0, "ui"],
+	"fridge_hum": [-19.0, 2.0, 12.0, "ambience"], "fridge_clunk": [-5.0, 3.0, 20.0, "sfx"],
+	"fridge_open": [-4.0, 3.0, 20.0, "sfx"], "fridge_close": [-4.0, 3.0, 20.0, "sfx"],
+	"water": [-6.0, 2.5, 15.0, "sfx"], "clock_tick": [-11.0, 1.5, 7.0, "ambience"], "tick": [-8.0, 2.0, 10.0, "sfx"],
+	"garage_door": [-2.0, 6.0, 50.0, "sfx"], "thud": [-3.0, 4.0, 30.0, "sfx"],
+	"car_engine": [-1.0, 8.0, 170.0, "sfx"], "car_idle": [-3.0, 6.0, 90.0, "sfx"], "car_pass": [3.0, 30.0, 300.0, "ambience"],
+	"car_door": [0.0, 8.0, 90.0, "sfx"],
+	# ambience
+	"crickets": [-6.0, 7.0, 50.0, "ambience"], "wind": [-12.0, 1.0, 1.0, "ambience"], "wind_gust": [-3.0, 16.0, 90.0, "ambience"],
+	"leaves": [-10.0, 9.0, 60.0, "ambience"], "distant_traffic": [-19.0, 1.0, 1.0, "ambience"], "lamp_buzz": [-22.0, 1.5, 9.0, "ambience"],
+	"owl": [-3.0, 20.0, 170.0, "ambience"], "dog_bark": [0.0, 14.0, 160.0, "ambience"], "wind_chime": [-4.0, 6.0, 60.0, "ambience"],
+	"house_creak": [-3.0, 4.0, 30.0, "sfx"], "pipes": [-4.0, 4.0, 30.0, "sfx"], "elec_buzz": [-6.0, 2.0, 10.0, "ambience"],
+	# chores
+	"dish": [-4.0, 2.0, 15.0, "sfx"], "scrub": [-7.0, 2.0, 12.0, "sfx"], "trash_bag": [-4.0, 2.0, 12.0, "sfx"],
+	"bin_lid": [-3.0, 4.0, 30.0, "sfx"], "mailbox": [2.0, 3.0, 20.0, "sfx"], "window_slide": [-3.0, 3.0, 20.0, "sfx"],
+	"stove_knob": [1.0, 2.0, 12.0, "sfx"], "gas_hiss": [-12.0, 2.0, 10.0, "sfx"], "object_fall": [2.0, 6.0, 40.0, "sfx"],
+	# horror
+	"stinger": [1.0, 6.0, 40.0, "horror"], "shriek": [-1.0, 5.0, 40.0, "horror"], "tv_scare": [-1.0, 5.0, 40.0, "horror"],
+	"breath_close": [3.0, 1.2, 6.0, "horror"], "whisper": [1.0, 1.5, 8.0, "horror"], "window_bang": [4.0, 6.0, 40.0, "horror"],
+	"bang_door": [4.0, 9.0, 70.0, "horror"], "chant_far": [-5.0, 25.0, 140.0, "horror"], "drone_swell": [-11.0, 1.0, 1.0, "horror"],
+	"run_steps": [2.0, 5.0, 40.0, "horror"], "heartbeat": [-8.0, 1.0, 1.0, "horror"],
+}
 
 const LOOPS := [
 	"crickets", "wind", "distant_traffic", "leaves", "fridge_hum", "computer_hum",
 	"tv_static", "tv_tone", "water", "lamp_buzz", "clock_tick", "car_engine",
-	"car_idle", "line_hiss", "garage_door",
+	"car_idle", "line_hiss", "garage_door", "chant_far", "elec_buzz", "gas_hiss",
 ]
+
+const BUSES := ["Ambience", "AmbIn", "AmbOut", "SFX", "SFXIn", "SFXOut", "Room", "Phone", "Horror", "Music", "UI"]
 
 var _cache: Dictionary = {}
 var _oneshots: Array = []
 var _rng := RandomNumberGenerator.new()
-var _lpf_in: AudioEffectLowPassFilter
-var _lpf_out: AudioEffectLowPassFilter
-var _muffle := 1.0  # 1 = player inside
+var _lpf: Dictionary = {}       # bus name -> AudioEffectLowPassFilter
+var _muffle := 1.0              # 1 = player inside
 
 
 func _ready() -> void:
@@ -30,26 +73,49 @@ func _ready() -> void:
 
 
 func _setup_buses() -> void:
-	if AudioServer.get_bus_index("World") != -1:
+	if AudioServer.get_bus_index("SFX") != -1:
 		return
-	_add_bus("World", "Master")
-	_lpf_in = AudioEffectLowPassFilter.new()
-	_lpf_in.cutoff_hz = 20000
-	_add_bus("Indoor", "World", [_lpf_in])
-	_lpf_out = AudioEffectLowPassFilter.new()
-	_lpf_out.cutoff_hz = 1000
-	_add_bus("Outdoor", "World", [_lpf_out])
+	var comp := AudioEffectCompressor.new()
+	comp.threshold = -12.0
+	comp.ratio = 3.0
+	comp.attack_us = 3000.0
+	comp.release_ms = 180.0
+	var lim := AudioEffectHardLimiter.new()
+	lim.ceiling_db = -1.0
+	lim.release = 0.1
+	AudioServer.add_bus_effect(0, comp)
+	AudioServer.add_bus_effect(0, lim)
+	_add_bus("Ambience", "Master")
+	_add_bus("AmbIn", "Ambience", [_new_lpf("AmbIn")])
+	_add_bus("AmbOut", "Ambience", [_new_lpf("AmbOut")])
+	_add_bus("SFX", "Master")
+	_add_bus("SFXIn", "SFX", [_new_lpf("SFXIn")])
+	_add_bus("SFXOut", "SFX", [_new_lpf("SFXOut")])
 	var rev := AudioEffectReverb.new()
 	rev.room_size = 0.35
-	rev.damping = 0.6
+	rev.damping = 0.55
 	rev.dry = 0.0
-	rev.wet = 0.25
+	rev.wet = 0.3
 	rev.spread = 0.8
-	_add_bus("Room", "World", [rev])
-	var phone_lpf := AudioEffectBandPassFilter.new()
-	phone_lpf.cutoff_hz = 1600
-	_add_bus("Phone", "Master", [phone_lpf])
+	_add_bus("Room", "SFX", [rev])
+	var bpf := AudioEffectBandPassFilter.new()
+	bpf.cutoff_hz = 1600
+	_add_bus("Phone", "SFX", [bpf])
+	var hcomp := AudioEffectCompressor.new()
+	hcomp.threshold = -10.0
+	hcomp.ratio = 4.0
+	hcomp.attack_us = 500.0
+	hcomp.release_ms = 250.0
+	_add_bus("Horror", "Master", [hcomp])
+	_add_bus("Music", "Master")
 	_add_bus("UI", "Master")
+
+
+func _new_lpf(bus_name: String) -> AudioEffectLowPassFilter:
+	var f := AudioEffectLowPassFilter.new()
+	f.cutoff_hz = 20000
+	_lpf[bus_name] = f
+	return f
 
 
 func _add_bus(bus_name: String, send: String, effects: Array = []) -> void:
@@ -64,17 +130,64 @@ func _add_bus(bus_name: String, send: String, effects: Array = []) -> void:
 func _process(delta: float) -> void:
 	var target := 1.0 if WorldState.player_inside else 0.0
 	_muffle = move_toward(_muffle, target, delta * 1.5)
-	if _lpf_in:
-		# Inside sounds get muffled when the player is outside, and the reverse.
-		_lpf_in.cutoff_hz = lerp(650.0, 20000.0, ease(_muffle, 0.4))
-		_lpf_out.cutoff_hz = lerp(20000.0, 1100.0, ease(_muffle, 2.5))
-		AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Indoor"), lerp(-9.0, 0.0, _muffle))
-		AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Outdoor"), lerp(0.0, -7.0, _muffle))
-	# Cleanup finished one-shots.
+	if not _lpf.is_empty():
+		# heard through a wall: dull, quieter, but never gone
+		var in_cut: float = lerp(900.0, 20000.0, ease(_muffle, 0.4))
+		var out_cut: float = lerp(20000.0, 1400.0, ease(_muffle, 2.5))
+		_lpf["SFXIn"].cutoff_hz = in_cut
+		_lpf["AmbIn"].cutoff_hz = in_cut
+		_lpf["SFXOut"].cutoff_hz = out_cut
+		_lpf["AmbOut"].cutoff_hz = out_cut
+		for b in ["SFXIn", "AmbIn"]:
+			AudioServer.set_bus_volume_db(AudioServer.get_bus_index(b), lerp(-6.0, 0.0, _muffle))
+		for b in ["SFXOut", "AmbOut"]:
+			AudioServer.set_bus_volume_db(AudioServer.get_bus_index(b), lerp(0.0, -5.0, _muffle))
 	for i in range(_oneshots.size() - 1, -1, -1):
-		var p = _oneshots[i]
-		if not is_instance_valid(p):
+		if not is_instance_valid(_oneshots[i]):
 			_oneshots.remove_at(i)
+
+
+# ------------------------------------------------------------------ mix table
+func mix_entry(sound_name: String) -> Array:
+	if MIX.has(sound_name):
+		return MIX[sound_name]
+	# variants: "step_wood_2" -> "step_wood", "stinger_1" -> "stinger"
+	var base := sound_name
+	while base.contains("_"):
+		base = base.substr(0, base.rfind("_"))
+		if MIX.has(base):
+			return MIX[base]
+	return [0.0, 4.0, 40.0, "sfx"]
+
+
+func db(sound_name: String) -> float:
+	return float(mix_entry(sound_name)[0])
+
+
+## Resolve a bus from a category ("sfx", "ambience", "horror", "ui", "music"),
+## an explicit bus name, or legacy names ("Indoor", "Outdoor", "World").
+func resolve_bus(sound_name: String, pos: Vector3, hint := "") -> String:
+	match hint:
+		"Indoor":
+			return "AmbIn" if mix_entry(sound_name)[3] == "ambience" else "SFXIn"
+		"Outdoor":
+			return "AmbOut" if mix_entry(sound_name)[3] == "ambience" else "SFXOut"
+		"World":
+			return "SFX"
+	if hint in BUSES or hint == "Master":
+		return hint
+	var cat: String = hint if hint != "" else String(mix_entry(sound_name)[3])
+	var inside := is_indoor(pos)
+	match cat:
+		"ambience":
+			return "AmbIn" if inside else "AmbOut"
+		"horror":
+			return "Horror"
+		"ui":
+			return "UI"
+		"music":
+			return "Music"
+	return "SFXIn" if inside else "SFXOut"
 
 
 # ------------------------------------------------------------------ library
@@ -108,12 +221,25 @@ func is_indoor(pos: Vector3) -> bool:
 
 
 func bus_for(pos: Vector3) -> String:
-	return "Indoor" if is_indoor(pos) else "Outdoor"
+	return "SFXIn" if is_indoor(pos) else "SFXOut"
 
 
-## Fire-and-forget positional sound. Returns the player so callers may tweak it.
-func play_3d(sound_name: String, pos: Vector3, volume_db := 0.0, pitch := 1.0, unit_size := 6.0,
-		max_distance := 60.0, bus := "") -> AudioStreamPlayer3D:
+func _configure(p: AudioStreamPlayer3D, sound_name: String, offset_db: float, unit_size: float, max_distance: float) -> void:
+	var e := mix_entry(sound_name)
+	p.volume_db = float(e[0]) + offset_db
+	# never let a call site make a sound vanish because of a tiny unit size
+	p.unit_size = max(unit_size, float(e[1])) if unit_size > 0.0 else float(e[1])
+	p.max_distance = max(max_distance, float(e[2])) if max_distance > 0.0 else float(e[2])
+	p.max_db = 6.0
+	p.attenuation_filter_cutoff_hz = 7000
+	p.attenuation_filter_db = -8.0
+	p.area_mask = B.LAYER_AUDIO
+	p.panning_strength = 1.0
+
+
+## Fire-and-forget positional sound.
+func play_3d(sound_name: String, pos: Vector3, offset_db := 0.0, pitch := 1.0, unit_size := -1.0,
+		max_distance := -1.0, bus := "") -> AudioStreamPlayer3D:
 	var s := stream(sound_name)
 	if s == null:
 		return null
@@ -122,14 +248,9 @@ func play_3d(sound_name: String, pos: Vector3, volume_db := 0.0, pitch := 1.0, u
 		return null
 	var p := AudioStreamPlayer3D.new()
 	p.stream = s
-	p.volume_db = volume_db
 	p.pitch_scale = pitch
-	p.unit_size = unit_size
-	p.max_distance = max_distance
-	p.attenuation_filter_cutoff_hz = 6000
-	p.attenuation_filter_db = -12
-	p.area_mask = B.LAYER_AUDIO
-	p.bus = bus if bus != "" else bus_for(pos)
+	_configure(p, sound_name, offset_db, unit_size, max_distance)
+	p.bus = resolve_bus(sound_name, pos, bus)
 	root.add_child(p)
 	p.global_position = pos
 	p.finished.connect(p.queue_free)
@@ -138,33 +259,35 @@ func play_3d(sound_name: String, pos: Vector3, volume_db := 0.0, pitch := 1.0, u
 	return p
 
 
-## A persistent (usually looping) positional emitter attached to `parent`.
-func make_emitter(parent: Node3D, sound_name: String, local_pos := Vector3.ZERO, volume_db := 0.0,
-		unit_size := 4.0, max_distance := 30.0, autoplay := true) -> AudioStreamPlayer3D:
+## Persistent (usually looping) positional emitter attached to `parent`.
+func make_emitter(parent: Node3D, sound_name: String, local_pos := Vector3.ZERO, offset_db := 0.0,
+		unit_size := -1.0, max_distance := -1.0, autoplay := true, bus := "") -> AudioStreamPlayer3D:
 	var p := AudioStreamPlayer3D.new()
 	p.stream = stream(sound_name)
-	p.volume_db = volume_db
-	p.unit_size = unit_size
-	p.max_distance = max_distance
-	p.attenuation_filter_cutoff_hz = 7000
-	p.area_mask = B.LAYER_AUDIO
+	_configure(p, sound_name, offset_db, unit_size, max_distance)
 	parent.add_child(p)
 	p.position = local_pos
-	p.bus = bus_for(p.global_position) if p.is_inside_tree() else "World"
+	p.bus = resolve_bus(sound_name, p.global_position if p.is_inside_tree() else Vector3.ZERO, bus)
 	if autoplay and p.stream:
-		# Random start offset so loops never sound synchronised.
 		p.play(randf() * max(0.0, p.stream.get_length() - 0.1))
 	return p
 
 
-func play_ui(sound_name: String, volume_db := 0.0) -> void:
+## Non-positional sound (inside the player's head: UI, the handset, beds).
+func play_flat(sound_name: String, offset_db := 0.0, bus := "", pitch := 1.0) -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
 	p.stream = stream(sound_name)
-	p.volume_db = volume_db
-	p.bus = "UI"
+	p.volume_db = db(sound_name) + offset_db
+	p.pitch_scale = pitch
+	p.bus = bus if bus != "" else resolve_bus(sound_name, Vector3.ZERO, "")
 	add_child(p)
 	p.finished.connect(p.queue_free)
 	p.play()
+	return p
+
+
+func play_ui(sound_name: String, offset_db := 0.0) -> void:
+	play_flat(sound_name, offset_db, "UI")
 
 
 func stop_all() -> void:
@@ -172,3 +295,15 @@ func stop_all() -> void:
 		if is_instance_valid(p):
 			p.queue_free()
 	_oneshots.clear()
+	for c in get_children():
+		if c is AudioStreamPlayer:
+			c.queue_free()
+
+
+## Smoothly fade the world mix (sleep transition). Master stays the user's.
+func fade_world(to_db: float, secs: float) -> void:
+	for b in ["Ambience", "SFX", "Horror", "Music"]:
+		var idx := AudioServer.get_bus_index(b)
+		var from := AudioServer.get_bus_volume_db(idx)
+		var tw := create_tween()
+		tw.tween_method(func(v): AudioServer.set_bus_volume_db(idx, v), from, to_db, secs)

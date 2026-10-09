@@ -31,7 +31,7 @@ func setup(id: String) -> void:
 	add_child(screen)
 	screen.position = Vector3(-0.06, 0.29, 0.202)
 	glow = B.omni(self, Vector3(-0.06, 0.3, 0.7), Color(0.6, 0.7, 1.0), 0.0, 4.5, false)
-	sound = AudioManager.make_emitter(self, "tv_static", Vector3(0, 0.3, 0.2), -12.0, 3.0, 25.0, false)
+	sound = AudioManager.make_emitter(self, "tv_static", Vector3(0, 0.3, 0.2), 0.0, -1.0, -1.0, false)
 	channel_label = B.label(self, "CH 03", Vector3(-0.2, 0.42, 0.206), 0.0012, Color(0.9, 1.0, 0.9), Vector3.ZERO, 32, true)
 	channel_label.visible = false
 	B.interact_area(self, Vector3(0.75, 0.6, 0.55), Vector3(0, 0.28, 0))
@@ -54,7 +54,7 @@ func set_power(on: bool, new_mode := 1, silent := false) -> void:
 	power = on
 	mode = new_mode if on else 0
 	if not silent:
-		AudioManager.play_3d("crt_on" if on else "crt_off", global_position + Vector3(0, 0.3, 0), -6.0, 1.0, 3.0)
+		AudioManager.play_3d("crt_on" if on else "crt_off", global_position + Vector3(0, 0.3, 0))
 	_apply()
 
 
@@ -77,15 +77,15 @@ func _apply() -> void:
 			sound.stop()
 		1, 2:
 			sound.stream = AudioManager.stream("tv_static")
-			sound.volume_db = -14.0 if mode == 1 else -18.0
+			sound.volume_db = AudioManager.db("tv_static") + (0.0 if mode == 1 else -4.0)
 			sound.play()
 		3:
 			sound.stream = AudioManager.stream("tv_tone")
-			sound.volume_db = -26.0
+			sound.volume_db = AudioManager.db("tv_tone")
 			sound.play()
 		4:
 			sound.stream = AudioManager.stream("distant_traffic")
-			sound.volume_db = -16.0
+			sound.volume_db = AudioManager.db("distant_traffic") + 6.0
 			sound.play()
 	WorldState.set_state("tv/" + obj_id + "/power", power)
 	WorldState.set_state("tv/" + obj_id + "/mode", mode)

@@ -41,7 +41,7 @@ func _start() -> void:
 		path.reverse()
 	surface = h.get_meta("path_surfaces", {}).get(chosen, "wood")
 	emitter = AudioStreamPlayer3D.new()
-	emitter.unit_size = 3.5
+	emitter.unit_size = 5.0
 	emitter.max_distance = 40.0
 	emitter.area_mask = B.LAYER_AUDIO
 	emitter.attenuation_filter_cutoff_hz = 5000
@@ -94,7 +94,7 @@ func _process(delta: float) -> void:
 		"concrete": prefix = "step_concrete"
 		"tile": prefix = "step_tile"
 	emitter.stream = AudioManager.variant(prefix, 4)
-	emitter.volume_db = -3.0 if steps_left > 3 else -3.0 - (4 - steps_left) * 4.0
+	emitter.volume_db = AudioManager.db("step_heavy") + (2.0 if steps_left > 3 else 2.0 - (4 - steps_left) * 4.0)
 	emitter.pitch_scale = rng.randf_range(0.9, 1.02)
 	emitter.play()
 	# a slightly irregular gait

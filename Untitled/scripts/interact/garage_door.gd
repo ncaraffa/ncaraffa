@@ -38,14 +38,14 @@ func interact(_player: Node) -> void:
 		return
 	_busy = true
 	is_open = not is_open
-	var snd := AudioManager.play_3d("garage_door", global_position + Vector3(0, 1.5, 0), -6.0, 1.0, 5.0)
+	var snd := AudioManager.play_3d("garage_door", global_position + Vector3(0, 1.5, 0))
 	var tw := create_tween()
 	tw.tween_property(pivot, "rotation_degrees:x", -88.0 if is_open else 0.0, 3.5).set_trans(Tween.TRANS_SINE)
 	await tw.finished
 	if is_instance_valid(snd):
 		snd.stop()
 		snd.queue_free()
-	AudioManager.play_3d("thud", global_position + Vector3(0, 1.0, 0), -10.0, 0.7, 4.0)
+	AudioManager.play_3d("thud", global_position + Vector3(0, 1.0, 0), -2.0, 0.7)
 	_busy = false
 	WorldState.set_state("door/" + obj_id, is_open)
 	WorldState.log_interaction("garage_door", obj_id)

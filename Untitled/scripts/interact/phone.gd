@@ -45,7 +45,7 @@ func setup(id: String) -> void:
 	add_child(line)
 	hiss = AudioStreamPlayer.new()
 	hiss.bus = "Phone"
-	hiss.volume_db = -18
+	hiss.volume_db = AudioManager.db("line_hiss")
 	hiss.stream = AudioManager.stream("line_hiss")
 	add_child(hiss)
 
@@ -69,7 +69,7 @@ func ring(count: int, on_answer: Callable = Callable()) -> void:
 
 func _ring_once() -> void:
 	rings_done += 1
-	_ring_player = AudioManager.play_3d("phone_ring", global_position + Vector3(0, 0.1, 0), 2.0, 1.0, 7.0, 70.0)
+	_ring_player = AudioManager.play_3d("phone_ring", global_position + Vector3(0, 0.1, 0))
 	WorldState.set_state("phone/rings_heard", rings_done)
 
 
@@ -118,7 +118,7 @@ func interact(_player: Node) -> void:
 func _lift() -> void:
 	in_call = true
 	_call_id += 1
-	AudioManager.play_3d("phone_pickup", global_position, -6.0, 1.0, 2.0)
+	AudioManager.play_3d("phone_pickup", global_position)
 	var t := create_tween()
 	t.tween_property(handset, "position", handset_home.origin + Vector3(0, 0.25, 0.05), 0.25)
 	hiss.play()
@@ -135,7 +135,7 @@ func hang_up() -> void:
 	var hud = WorldState.get_obj("hud")
 	if hud:
 		hud.clear_subtitle()
-	AudioManager.play_3d("phone_hangup", global_position, -4.0, 1.0, 3.0)
+	AudioManager.play_3d("phone_hangup", global_position)
 	var t := create_tween()
 	t.tween_property(handset, "transform", handset_home, 0.2)
 	hung_up.emit()
@@ -151,7 +151,7 @@ func play_line(sound_name: String, subs: Array = [], dial_after := true, delay :
 		if my_call != _call_id or not in_call:
 			return
 	line.stream = AudioManager.stream(sound_name)
-	line.volume_db = -2.0
+	line.volume_db = AudioManager.db(sound_name)
 	line.play()
 	var hud = WorldState.get_obj("hud")
 	for s in subs:
@@ -160,13 +160,13 @@ func play_line(sound_name: String, subs: Array = [], dial_after := true, delay :
 		await line.finished
 		if my_call != _call_id or not in_call:
 			return
-		AudioManager.play_ui("phone_hangup", -20.0)
+		AudioManager.play_flat("phone_hangup", -10.0, "Phone")
 		await get_tree().create_timer(1.2).timeout
 		if my_call != _call_id or not in_call:
 			return
 		hiss.stop()
 		line.stream = AudioManager.stream("dial_tone")
-		line.volume_db = -10.0
+		line.volume_db = AudioManager.db("dial_tone")
 		line.play()
 
 
@@ -181,7 +181,7 @@ func play_extra(sound_name: String, volume_db := -12.0) -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
 	p.bus = "Phone"
 	p.stream = AudioManager.stream(sound_name)
-	p.volume_db = volume_db
+	p.volume_db = AudioManager.db(sound_name) + volume_db
 	add_child(p)
 	p.add_to_group("phone_extra")
 	p.play()

@@ -20,7 +20,7 @@ func _start() -> void:
 		finish()
 		return
 	if not comp.power:
-		AudioManager.play_3d("crt_on", comp.global_position + Vector3(0, 0.3, 0), -8.0, 1.0, 3.0)
+		AudioManager.play_3d("crt_on", comp.global_position + Vector3(0, 0.3, 0))
 	comp.terminal.show_press_enter()
 	if not comp.terminal.spelled_enter.is_connected(_on_spelled):
 		comp.terminal.spelled_enter.connect(_on_spelled)
@@ -49,11 +49,11 @@ func _on_spelled() -> void:
 			if c[1] != "":
 				sw = WorldState.get_obj(c[1]) as Node3D
 			if sw:
-				AudioManager.play_3d("switch_click", sw.global_position, -9.0, 0.9, 2.5)
+				AudioManager.play_3d("switch_click", sw.global_position, 0.0, 0.9)
 			WorldState.set_state("consequence/enter_light", c[0])
 			break
 	# And, far away outside, someone spells another word.
 	await wait(9.0)
 	var nh := WorldState.get_obj("neighbor_whitcomb") as Node3D
 	var pos := nh.global_position + Vector3(0, 1.6, 0) if nh else Vector3(20, 1.6, 10)
-	AudioManager.play_3d("voice_spell", pos, -2.0, 1.0, 9.0, 120.0, "Outdoor")
+	AudioManager.play_3d("voice_spell", pos, 0.0, 1.0)

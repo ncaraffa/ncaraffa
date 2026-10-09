@@ -54,7 +54,7 @@ func setup(id: String) -> void:
 	add_child(screen)
 	screen.position = Vector3(-0.01, 0.335, 0.081)
 	glow = B.omni(self, Vector3(0, 0.35, 0.45), Color(0.7, 0.85, 0.8), 0.12, 2.5, false)
-	hum = AudioManager.make_emitter(self, "computer_hum", Vector3(0.38, 0.2, 0), -20.0, 1.5, 8.0)
+	hum = AudioManager.make_emitter(self, "computer_hum", Vector3(0.38, 0.2, 0))
 	focus_point = B.node(self, "Focus", Vector3(-0.01, 0.335, 0.6))
 	B.interact_area(self, Vector3(0.6, 0.45, 0.6), Vector3(0.1, 0.25, 0.1))
 
@@ -65,7 +65,7 @@ func get_prompt() -> String:
 
 func interact(player: Node) -> void:
 	if not power:
-		AudioManager.play_3d("crt_on", global_position + Vector3(0, 0.3, 0), -6.0, 1.0, 3.0)
+		AudioManager.play_3d("crt_on", global_position + Vector3(0, 0.3, 0))
 		terminal.power_on(false)
 		return
 	WorldState.log_interaction("computer", obj_id)
@@ -79,7 +79,7 @@ func handle_key(ev: InputEventKey) -> void:
 
 func _on_power(on: bool) -> void:
 	if not on and power:
-		AudioManager.play_3d("crt_off", global_position + Vector3(0, 0.3, 0), -6.0, 1.0, 3.0)
+		AudioManager.play_3d("crt_off", global_position + Vector3(0, 0.3, 0))
 	power = on
 	glow.visible = on
 	screen_mat.set_shader_parameter("power", 1.0 if on else 0.0)

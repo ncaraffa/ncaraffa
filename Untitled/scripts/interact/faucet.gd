@@ -15,7 +15,7 @@ func setup(id: String, height := 0.18) -> void:
 	var wm := Mats.color(Color(0.7, 0.8, 0.85), 0.05)
 	stream_mesh = B.cyl(self, 0.005, 0.008, height, Vector3(0, 0.14 - height / 2, 0.14), wm, false, Vector3.ZERO, 6)
 	stream_mesh.visible = false
-	snd = AudioManager.make_emitter(self, "water", Vector3(0, 0, 0.1), -12.0, 2.0, 12.0, false)
+	snd = AudioManager.make_emitter(self, "water", Vector3(0, 0, 0.1), 0.0, -1.0, -1.0, false)
 	B.interact_area(self, Vector3(0.2, 0.25, 0.3), Vector3(0, 0.12, 0.05))
 
 

@@ -55,7 +55,7 @@ func set_on(value: bool, silent := false) -> void:
 	for mi in glow_meshes:
 		mi.material_override = mat_on if value else mat_off
 	if not silent and interactive and click_sound:
-		AudioManager.play_3d("switch_click", global_position, -10.0, randf_range(0.9, 1.1), 2.0)
+		AudioManager.play_3d("switch_click", global_position, -2.0, randf_range(0.9, 1.1))
 	if obj_id != "":
 		WorldState.set_state("light/" + obj_id, value)
 

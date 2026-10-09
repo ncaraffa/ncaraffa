@@ -40,14 +40,14 @@ func _beds() -> void:
 	# wind bed and far traffic: non-positional, on the Outdoor bus (muffled inside)
 	_bed = AudioStreamPlayer.new()
 	_bed.stream = AudioManager.stream("wind")
-	_bed.volume_db = -19.0
-	_bed.bus = "Outdoor"
+	_bed.volume_db = AudioManager.db("wind")
+	_bed.bus = "AmbOut"
 	add_child(_bed)
 	_bed.play(rng.randf() * 10.0)
 	_traffic = AudioStreamPlayer.new()
 	_traffic.stream = AudioManager.stream("distant_traffic")
-	_traffic.volume_db = -30.0
-	_traffic.bus = "Outdoor"
+	_traffic.volume_db = AudioManager.db("distant_traffic")
+	_traffic.bus = "AmbOut"
 	add_child(_traffic)
 	_traffic.play()
 	# crickets live in the grass around the court
@@ -56,13 +56,11 @@ func _beds() -> void:
 		var a := TAU * i / 9.0 + rng.randf() * 0.3
 		var r := rng.randf_range(20.0, 40.0)
 		var holder := B.node(root, "Crickets", Vector3(sin(a) * r, 0.2, cos(a) * r))
-		var e := AudioManager.make_emitter(holder, "crickets", Vector3.ZERO, -12.0, 6.0, 45.0)
-		e.bus = "Outdoor"
+		var e := AudioManager.make_emitter(holder, "crickets", Vector3.ZERO, 0.0, -1.0, -1.0, true, "AmbOut")
 		e.pitch_scale = rng.randf_range(0.92, 1.08)
 	for p: Vector3 in [Vector3(-4, 0.2, -46), Vector3(8, 0.2, -44), Vector3(-9, 0.2, -22)]:
 		var holder2 := B.node(root, "Crickets", p)
-		var e2 := AudioManager.make_emitter(holder2, "crickets", Vector3.ZERO, -14.0, 4.0, 30.0)
-		e2.bus = "Outdoor"
+		AudioManager.make_emitter(holder2, "crickets", Vector3.ZERO, -3.0, -1.0, -1.0, true, "AmbOut")
 
 
 func _process(delta: float) -> void:
@@ -116,17 +114,17 @@ func _do_dog() -> void:
 	var keys: Array = nb.houses.keys()
 	var h: Node3D = nb.houses[keys[rng.randi() % keys.size()]]
 	var pos := _yard_point(h)
-	AudioManager.play_3d("dog_bark_%d" % rng.randi_range(0, 3), pos, rng.randf_range(-6.0, 0.0), rng.randf_range(0.9, 1.1), 10.0, 140.0, "Outdoor")
+	AudioManager.play_3d("dog_bark_%d" % rng.randi_range(0, 3), pos, rng.randf_range(-4.0, 0.0), rng.randf_range(0.9, 1.1), -1.0, -1.0, "Outdoor")
 	if rng.randf() < 0.3:
 		var h2: Node3D = nb.houses[keys[rng.randi() % keys.size()]]
 		var pos2 := _yard_point(h2)
 		get_tree().create_timer(rng.randf_range(2.0, 5.0), false).timeout.connect(func():
-			AudioManager.play_3d("dog_bark_%d" % rng.randi_range(0, 3), pos2, -6.0, rng.randf_range(0.8, 1.2), 10.0, 140.0, "Outdoor"))
+			AudioManager.play_3d("dog_bark_%d" % rng.randi_range(0, 3), pos2, -4.0, rng.randf_range(0.8, 1.2), -1.0, -1.0, "Outdoor"))
 
 
 func _do_owl() -> void:
 	var a := rng.randf() * TAU
-	AudioManager.play_3d("owl", Vector3(sin(a) * 60.0, 9.0, cos(a) * 60.0), -4.0, rng.randf_range(0.95, 1.05), 18.0, 160.0, "Outdoor")
+	AudioManager.play_3d("owl", Vector3(sin(a) * 60.0, 9.0, cos(a) * 60.0), 0.0, rng.randf_range(0.95, 1.05), -1.0, -1.0, "Outdoor")
 
 
 func _do_gust() -> void:
@@ -134,22 +132,22 @@ func _do_gust() -> void:
 	if p == null:
 		return
 	var a := rng.randf() * TAU
-	AudioManager.play_3d("wind_gust", p.global_position + Vector3(sin(a) * 18.0, 6.0, cos(a) * 18.0), -6.0, rng.randf_range(0.85, 1.1), 14.0, 80.0, "Outdoor")
+	AudioManager.play_3d("wind_gust", p.global_position + Vector3(sin(a) * 18.0, 6.0, cos(a) * 18.0), 0.0, rng.randf_range(0.85, 1.1), -1.0, -1.0, "Outdoor")
 	if _bed:
 		var t := create_tween()
-		t.tween_property(_bed, "volume_db", -14.0, 2.0)
-		t.tween_property(_bed, "volume_db", -19.0, 3.0)
+		t.tween_property(_bed, "volume_db", AudioManager.db("wind") + 5.0, 2.0)
+		t.tween_property(_bed, "volume_db", AudioManager.db("wind"), 3.0)
 
 
 func _do_chime() -> void:
 	var h := WorldState.get_obj("neighbor_pruitt") as Node3D
 	if h:
-		AudioManager.play_3d("wind_chime", h.global_position + h.global_basis.z * 1.0 + Vector3(0, 2.2, 0), -8.0, 1.0, 5.0, 60.0, "Outdoor")
+		AudioManager.play_3d("wind_chime", h.global_position + h.global_basis.z * 1.0 + Vector3(0, 2.2, 0), 0.0, 1.0, -1.0, -1.0, "Outdoor")
 
 
 func _do_distant_car() -> void:
 	var x := rng.randf_range(-50.0, 50.0)
-	AudioManager.play_3d("car_pass", Vector3(x, 1.0, 154.0), 0.0, rng.randf_range(0.85, 1.15), 25.0, 260.0, "Outdoor")
+	AudioManager.play_3d("car_pass", Vector3(x, 1.0, 154.0), 0.0, rng.randf_range(0.85, 1.15), -1.0, -1.0, "Outdoor")
 
 
 ## A neighbour comes home: drives in, parks in a driveway, the lights go off.
@@ -199,9 +197,9 @@ func _do_fridge() -> void:
 	if hum == null:
 		return
 	_fridge_on = not _fridge_on
-	AudioManager.play_3d("fridge_clunk", hum.global_position, -14.0, rng.randf_range(0.9, 1.1), 2.0)
+	AudioManager.play_3d("fridge_clunk", hum.global_position, 0.0, rng.randf_range(0.9, 1.1))
 	var t := create_tween()
-	t.tween_property(hum, "volume_db", -20.0 if _fridge_on else -60.0, 0.6)
+	t.tween_property(hum, "volume_db", AudioManager.db("fridge_hum") if _fridge_on else -60.0, 0.6)
 	WorldState.set_state("ambient/fridge_running", _fridge_on)
 
 
@@ -210,7 +208,7 @@ func _do_creak() -> void:
 	if h == null:
 		return
 	var local := Vector3(rng.randf_range(0.5, 15.5), rng.randf_range(1.8, 2.7), rng.randf_range(0.5, 10.5))
-	AudioManager.play_3d("house_creak_%d" % rng.randi_range(0, 3), h.to_global(local), rng.randf_range(-16.0, -9.0), rng.randf_range(0.85, 1.15), 3.0, 30.0, "Indoor")
+	AudioManager.play_3d("house_creak_%d" % rng.randi_range(0, 3), h.to_global(local), rng.randf_range(-6.0, 0.0), rng.randf_range(0.85, 1.15), -1.0, -1.0, "Indoor")
 
 
 func _do_pipes() -> void:
@@ -218,7 +216,7 @@ func _do_pipes() -> void:
 	if h == null:
 		return
 	var spots := [Vector3(6.8, 0.6, 1.2), Vector3(12.0, 0.4, 0.3), Vector3(7.0, 1.0, 4.5)]
-	AudioManager.play_3d("pipes", h.to_global(spots[rng.randi() % spots.size()]), -12.0, rng.randf_range(0.85, 1.1), 3.0, 30.0, "Indoor")
+	AudioManager.play_3d("pipes", h.to_global(spots[rng.randi() % spots.size()]), 0.0, rng.randf_range(0.85, 1.1), -1.0, -1.0, "Indoor")
 
 
 func _do_flicker() -> void:

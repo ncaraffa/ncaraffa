@@ -62,7 +62,7 @@ func _on_answer(_p: Phone) -> void:
 				phone.play_extra(bark, -10.0)
 				var nh := WorldState.get_obj("neighbor_whitcomb") as Node3D
 				if nh:
-					AudioManager.play_3d(bark, nh.global_position + nh.global_basis.z * -14.0 + Vector3(0, 0.6, 0), -2.0, 1.0, 10.0, 120.0)
+					AudioManager.play_3d(bark, nh.global_position + nh.global_basis.z * -14.0 + Vector3(0, 0.6, 0), 0.0, 1.0)
 			await wait(rng.randf_range(6.0, 9.0))
 			if phone.in_call:
 				phone.play_line("phone_hangup", [], true)

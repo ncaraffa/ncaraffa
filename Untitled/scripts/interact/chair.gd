@@ -29,7 +29,7 @@ func slide_to(target: Transform3D, dur := 0.5, scrape := true) -> void:
 	var tw := create_tween()
 	tw.tween_property(self, "transform", target, dur).set_trans(Tween.TRANS_SINE)
 	if scrape:
-		AudioManager.play_3d("door_creak", global_position + Vector3(0, 0.2, 0), -18.0, randf_range(1.9, 2.4), 3.0)
+		AudioManager.play_3d("door_creak", global_position + Vector3(0, 0.2, 0), -6.0, randf_range(1.9, 2.4))
 	displaced = not _is_home(target)
 	await tw.finished
 	_store()

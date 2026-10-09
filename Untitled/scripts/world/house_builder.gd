@@ -207,9 +207,12 @@ func _floors_and_ceiling() -> void:
 		B.box(structure, size, Vector3((r[0] + r[1]) / 2.0, -0.01, (r[2] + r[3]) / 2.0), Mats.m(r[4]), true, Vector3.ZERO, r[5])
 	# thresholds under doorways get the floor of the side they open onto
 	B.box(structure, Vector3(0.95, 0.02, 0.3), Vector3(5.9, -0.01, 11.0), Mats.m("wood_dark"), true, Vector3.ZERO, "wood")
+	B.box(structure, Vector3(0.9, 0.02, 0.3), Vector3(13.6, -0.01, 0.0), Mats.m("wood_dark"), true, Vector3.ZERO, "wood")
+	B.box(structure, Vector3(0.3, 0.02, 0.85), Vector3(16.0, -0.01, 4.8), Mats.m("wood_dark"), true, Vector3.ZERO, "wood")
 	# garage slab
 	B.box(structure, Vector3(6.4, 0.3, 9.0), Vector3(19.3, -0.45, 6.5), Mats.m("concrete_dark"), true, Vector3.ZERO, "concrete")
-	B.box(structure, Vector3(0.45, 0.15, 1.0), Vector3(16.33, -0.225, 4.8), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
+	B.box(structure, Vector3(0.7, 0.3, 1.2), Vector3(16.45, -0.15, 4.8), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
+	B.box(structure, Vector3(0.4, 0.15, 1.2), Vector3(17.0, -0.245, 4.8), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
 	# ceilings
 	B.box(structure, Vector3(16.24, 0.1, 11.24), Vector3(8.0, H + 0.05, 5.5), Mats.m("ceiling"))
 	B.box(structure, Vector3(6.6, 0.1, 9.2), Vector3(19.3, H + 0.05, 6.5), Mats.m("ceiling"))
@@ -247,9 +250,22 @@ func _doors() -> void:
 	door("door_closet", "z", 5.6, 7.0, 0.78, 2.04, false, true, false)
 	var front := door("door_front", "x", 11.0, 5.9, 0.93, 2.1, true, false, false, "wood_dark", 0.05)
 	front.sound_close = "door_close"
-	front.volume_db = -1.0
-	door("door_back", "x", 0.0, 13.6, 0.88, 2.08, false, true, false, "door_white", 0.05)
+	front.volume_db = 1.0
+	var back := door("door_back", "x", 0.0, 13.6, 0.88, 2.08, false, true, false, "door_white", 0.05)
+	# deadbolts (inside faces only). Front: hinge-low node, inside = -Z local.
+	# Back: hinge-high node (rotated 180), inside (kitchen, +Z world) = -Z local.
+	_deadbolt(front, -1.0)
+	_deadbolt(back, -1.0)
 	door("door_garage", "z", 16.0, 4.8, 0.83, 2.03, false, false, false)
+
+
+func _deadbolt(d: Door, inside_sign: float) -> void:
+	d.inside_sign = inside_sign
+	var db := Deadbolt.new()
+	db.name = "Deadbolt"
+	d.body.add_child(db)
+	db.position = Vector3(d.width - 0.08, 1.15, 0)
+	db.setup(d, 0.05)
 
 
 # ================================================================== windows
@@ -316,17 +332,22 @@ func _exterior() -> void:
 	for p: Vector3 in [Vector3(-0.13, 1.3, -0.13), Vector3(-0.13, 1.3, 11.13), Vector3(16.13, 1.3, -0.13)]:
 		B.box(ext, Vector3(0.1, H + 0.1, 0.1), p, Mats.m("trim"))
 	# front porch: slab, posts, small roof
-	B.box(ext, Vector3(3.2, 0.16, 1.7), Vector3(5.9, -0.22, 11.95), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
+	# Landings are flush with the interior floor; the step down is at the outer
+	# edge, never under the door, so nobody trips on the threshold + jamb at once.
+	B.box(ext, Vector3(3.2, 0.3, 1.7), Vector3(5.9, -0.15, 11.95), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
+	B.box(ext, Vector3(3.8, 0.14, 2.1), Vector3(5.9, -0.23, 12.0), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
 	for x: float in [4.45, 7.35]:
 		B.box(ext, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.1, 12.7), Mats.m("trim"), true)
 	B.box(ext, Vector3(3.4, 0.12, 1.9), Vector3(5.9, 2.45, 11.95), Mats.m("trim"))
 	B.box(ext, Vector3(3.5, 0.06, 2.0), Vector3(5.9, 2.53, 11.95), sh)
 	# doormat
-	B.box(ext, Vector3(0.9, 0.015, 0.55), Vector3(5.9, -0.135, 11.5), Mats.color(Color(0.3, 0.24, 0.16), 1.0))
+	B.box(ext, Vector3(0.9, 0.012, 0.55), Vector3(5.9, 0.006, 11.5), Mats.color(Color(0.3, 0.24, 0.16), 1.0))
 	# house number
 	B.label(ext, "14", Vector3(7.0, 1.75, 11.135), 0.006, Color(0.12, 0.1, 0.08), Vector3.ZERO, 48)
 	# back patio
-	B.box(ext, Vector3(4.8, 0.16, 2.6), Vector3(13.8, -0.22, -1.42), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
+	B.box(ext, Vector3(4.8, 0.3, 2.6), Vector3(13.8, -0.15, -1.42), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
+	B.box(ext, Vector3(5.6, 0.14, 3.0), Vector3(13.8, -0.23, -1.62), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
+	B.box(ext, Vector3(0.9, 0.012, 0.5), Vector3(13.6, 0.006, -0.45), Mats.color(Color(0.25, 0.22, 0.18), 1.0))
 	# garage apron
 	B.box(ext, Vector3(5.6, 0.04, 0.8), Vector3(19.25, -0.28, 11.4), Mats.m("concrete"), true, Vector3.ZERO, "concrete")
 	# garage side light
@@ -635,7 +656,7 @@ func _kitchen() -> void:
 	letter.setup("fridge_letter", FRIDGE_LETTER, Vector2(0.17, 0.22), Mats.color(Color(0.93, 0.9, 0.8), 0.9), false)
 	letter.rotation_degrees.z = -4
 	B.box(fd.body, Vector3(0.03, 0.03, 0.012), Vector3(0.42, 1.28, 0.04), Mats.color(Color(0.8, 0.2, 0.15), 0.4))
-	var hum := AudioManager.make_emitter(R, "fridge_hum", Vector3(15.5, 1.7, 3.92), -20.0, 1.8, 10.0)
+	var hum := AudioManager.make_emitter(R, "fridge_hum", Vector3(15.5, 1.7, 3.92))
 	hum.name = "FridgeHum"
 	WorldState.register("fridge_hum", hum)
 	# little table + the two chairs the world sometimes moves
@@ -692,7 +713,7 @@ const FRIDGE_LETTER := "Dana -\n\nSaw Dad on Sunday. He's the same.\nStill spell
 func _points() -> void:
 	house.points = {
 		"front_door_out": Vector3(5.9, 1.2, 11.25),
-		"front_porch": Vector3(5.9, -0.14, 11.75),
+		"front_porch": Vector3(5.9, -0.02, 11.75),
 		"back_door_out": Vector3(13.6, 1.2, -0.3),
 		"living_center": Vector3(12.5, 1.2, 8.6),
 		"kitchen_center": Vector3(13.5, 1.2, 3.0),
@@ -703,9 +724,9 @@ func _points() -> void:
 	house.paths = {
 		"hall": [Vector3(2.0, 0, 8.2), Vector3(3.6, 0, 6.2), Vector3(4.9, 0, 6.0), Vector3(4.9, 0, 4.5), Vector3(4.9, 0, 3.0), Vector3(4.9, 0, 2.0)],
 		"living": [Vector3(8.4, 0, 9.6), Vector3(10.1, 0, 8.0), Vector3(9.5, 0, 6.4), Vector3(9.7, 0, 4.9), Vector3(11.6, 0, 3.6), Vector3(13.6, 0, 2.6)],
-		"patio": [Vector3(17.0, -0.3, -1.4), Vector3(14.5, -0.14, -1.6), Vector3(12.0, -0.14, -1.5), Vector3(9.0, -0.3, -2.0), Vector3(5.0, -0.3, -2.4), Vector3(1.5, -0.3, -2.2)],
+		"patio": [Vector3(17.0, -0.3, -1.4), Vector3(14.5, -0.02, -1.6), Vector3(12.0, -0.02, -1.5), Vector3(9.0, -0.3, -2.0), Vector3(5.0, -0.3, -2.4), Vector3(1.5, -0.3, -2.2)],
 		"to_bedroom": [Vector3(5.9, 0, 9.8), Vector3(4.9, 0, 8.4), Vector3(4.9, 0, 6.4), Vector3(4.85, 0, 4.6), Vector3(4.45, 0, 4.2)],
-		"garage": [Vector3(21.5, -0.3, 9.6), Vector3(19.4, -0.3, 9.2), Vector3(17.2, -0.3, 6.0), Vector3(16.5, -0.15, 4.8)],
+		"garage": [Vector3(21.5, -0.3, 9.6), Vector3(19.4, -0.3, 9.2), Vector3(17.2, -0.3, 6.0), Vector3(16.4, 0.0, 4.8)],
 		"kitchen": [Vector3(14.6, 0, 1.6), Vector3(13.2, 0, 2.0), Vector3(11.8, 0, 2.9), Vector3(10.0, 0, 3.2), Vector3(8.4, 0, 4.8)],
 	}
 	house.set_meta("path_surfaces", {"patio": "concrete", "garage": "concrete", "kitchen": "tile"})

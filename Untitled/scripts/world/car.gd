@@ -29,12 +29,13 @@ func setup(paint: Color, wagon := false) -> void:
 	tail = B.omni(self, Vector3(0, 0.7, -2.6), Color(1.0, 0.1, 0.05), 0.6, 3.5, false)
 	engine = AudioStreamPlayer3D.new()
 	engine.stream = AudioManager.stream("car_engine")
-	engine.unit_size = 7.0
+	engine.unit_size = AudioManager.mix_entry("car_engine")[1]
 	engine.max_distance = 160.0
-	engine.volume_db = -2.0
+	engine.volume_db = AudioManager.db("car_engine")
 	engine.doppler_tracking = AudioStreamPlayer3D.DOPPLER_TRACKING_PHYSICS_STEP
 	engine.area_mask = B.LAYER_AUDIO
-	engine.bus = "Outdoor"
+	engine.bus = "SFXOut"
+	engine.attenuation_filter_db = -8.0
 	add_child(engine)
 	set_lights(true)
 
@@ -128,5 +129,5 @@ func park() -> void:
 	parked = true
 	engine.stop()
 	set_lights(false)
-	AudioManager.play_3d("car_door", global_position + Vector3(0, 1, 0), -4.0, randf_range(0.9, 1.05), 5.0, 80.0)
+	AudioManager.play_3d("car_door", global_position + Vector3(0, 1, 0), 0.0, randf_range(0.9, 1.05))
 	B.collider(self, Vector3(1.8, 1.4, 4.6), Vector3(0, 0.7, 0))
