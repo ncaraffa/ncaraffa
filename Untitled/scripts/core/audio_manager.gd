@@ -22,7 +22,7 @@ const MIX := {
 	"door_open": [9.0, 4.5, 35.0, "sfx"], "door_close": [-1.0, 5.0, 40.0, "sfx"], "door_creak": [-3.0, 4.0, 30.0, "sfx"],
 	"door_rattle": [0.0, 4.0, 30.0, "sfx"], "lock_click": [-1.0, 3.0, 20.0, "sfx"],
 	"knock": [2.0, 8.0, 70.0, "sfx"], "switch_click": [-2.0, 3.0, 20.0, "sfx"],
-	"phone_ring": [0.0, 9.0, 90.0, "sfx"], "phone_pickup": [-3.0, 3.0, 20.0, "sfx"], "phone_hangup": [-3.0, 3.0, 20.0, "sfx"],
+	"phone_ring": [-4.0, 9.0, 90.0, "sfx"], "phone_pickup": [-3.0, 3.0, 20.0, "sfx"], "phone_hangup": [-3.0, 3.0, 20.0, "sfx"],
 	"dial_tone": [-14.0, 1.0, 5.0, "sfx"], "line_hiss": [-18.0, 1.0, 5.0, "sfx"],
 	"voice_time": [-2.0, 1.0, 5.0, "sfx"], "voice_wrong": [-2.0, 1.0, 5.0, "sfx"], "voice_hello": [-2.0, 1.0, 5.0, "sfx"],
 	"voice_spell": [3.0, 14.0, 160.0, "horror"],
@@ -231,7 +231,7 @@ func _configure(p: AudioStreamPlayer3D, sound_name: String, offset_db: float, un
 	# never let a call site make a sound vanish because of a tiny unit size
 	p.unit_size = max(unit_size, float(e[1])) if unit_size > 0.0 else float(e[1])
 	p.max_distance = max(max_distance, float(e[2])) if max_distance > 0.0 else float(e[2])
-	p.max_db = 6.0
+	p.max_db = p.volume_db + 3.0   # closeness adds at most +3 dB over the mix level
 	p.attenuation_filter_cutoff_hz = 7000
 	p.attenuation_filter_db = -8.0
 	p.area_mask = B.LAYER_AUDIO
