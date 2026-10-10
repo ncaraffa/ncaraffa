@@ -215,9 +215,10 @@ func _night_waking() -> void:
 		var at: Vector3 = h.to_global(Vector3(2.1, -0.3, -0.7))
 		f.appear(at, h.global_basis * Vector3(0, 0, 1))
 		f.look_target = p.camera
-		f.set_rim(1.7)
+		f.set_rim(2.4)
 		f._lean = 0.12
-		back_light = B.omni(h, Vector3(2.1, 1.2, -2.6), Color(0.62, 0.7, 0.95), 0.9, 4.0, false)
+		# light the yard BEHIND it so it reads as a black cut-out against the grass and fence
+		back_light = B.omni(h, Vector3(2.4, 1.6, -3.6), Color(0.62, 0.7, 0.95), 3.2, 7.5, true)
 	WorldState.log_event("night_waking", "3am", {"intensity": 3})
 	await get_tree().create_timer(1.0, false).timeout
 	# BANG: the bedroom door bursts open (or slams shut)
