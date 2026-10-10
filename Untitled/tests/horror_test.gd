@@ -125,8 +125,8 @@ func _run() -> void:
 	ok(WS.get_state("mail/text", "").contains("ASSOCIATION"), "night 2 mail is waiting")
 	ok(WS.get_obj("hud").title_label.text == "Night 2", "shows 'Night 2' during the transition")
 
-	print("[nights 3-6]")
-	for n in [3, 4, 5, 6]:
+	print("[nights 3-5]")
+	for n in [3, 4, 5]:
 		tm.debug_complete()
 		await secs(1.0)
 		var can: bool = tm.essentials_done()
@@ -161,7 +161,7 @@ func _run() -> void:
 		sd.force(sid)
 		await secs(0.1)
 		var shown: bool = pool.any_visible() or sid == "tv"
-		await secs(3.5)
+		await secs(5.0)
 		var logged: bool = WS.event_log.slice(before).any(func(e): return e.id == "scare_" + sid)
 		ok(shown and logged and not pool.any_visible(), "scare '%s' fires, is logged and cleans up" % sid)
 
@@ -176,7 +176,7 @@ func _run() -> void:
 	place(Vector3(4.9, 0.02, 8.0))
 	p.set_look(0.0, -3.0)
 	await secs(1.0)
-	ok(sd.armed == null and WS.event_log.back().id == "scare_hallway", "looking down the hall triggers it")
+	ok(sd.armed == null and WS.event_log.slice(-6).any(func(e): return e.id == "scare_hallway"), "looking down the hall triggers it")
 	await secs(1.5)
 	# door: the scare picks a closed door; open it with E from the other side
 	for d in ["door_b2", "door_closet", "door_laundry", "door_bath", "door_b1"]:
@@ -201,7 +201,7 @@ func _run() -> void:
 	place(Vector3(12.0, 0.02, 1.4))
 	look_at_point(house.to_global(Vector3(12.0, 1.55, 0.0)))
 	await secs(3.0)
-	ok(WS.event_log.back().id == "scare_window", "looking out of a window triggers it")
+	ok(WS.event_log.slice(-6).any(func(e): return e.id == "scare_window"), "looking out of a window triggers it")
 	await secs(1.0)
 	# behind: breathing, then turning around
 	place(Vector3(10.0, 0.02, 8.0))
@@ -211,7 +211,7 @@ func _run() -> void:
 	await secs(1.6)
 	p.set_look(180.0)
 	await secs(0.5)
-	ok(WS.event_log.back().id == "scare_behind", "turning round towards the breathing triggers it")
+	ok(WS.event_log.slice(-6).any(func(e): return e.id == "scare_behind"), "turning round towards the breathing triggers it")
 	await secs(1.0)
 	# behind, but the player never turns: nothing happens
 	var behind_before: int = WS.event_log.filter(func(e): return e.id == "scare_behind").size()

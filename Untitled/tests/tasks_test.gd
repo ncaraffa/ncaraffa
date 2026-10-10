@@ -1,7 +1,9 @@
 extends SceneTree
-## Plays nights 1-6 doing every chore through the player's real interaction
+## Plays all five nights doing every chore through the player's real interaction
 ## ray (look + E), checks that no chore starts already done, that each one
-## ticks off, and that the bed works (including the night-3 awakening).
+## ticks off, and that the bed works: the night-3 awakening, the night-4
+## silhouette in the hallway (it has to happen before you can sleep), and the
+## end of night 5, which is not a sixth night but FINAL 2 (the last task).
 ##   godot --headless --path . -s tests/tasks_test.gd
 var WS
 var p
@@ -57,6 +59,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.get_node("GameManager").in_game = false
+	root.get_node("GameManager").ending_returns_to_menu = false
 	var world: Node = load("res://scenes/world.tscn").instantiate()
 	root.add_child(world)
 	current_scene = world
@@ -70,7 +73,7 @@ func _run() -> void:
 	WS.get_obj("scare_director").enabled = false
 	await use(Vector3(1.5, 0.02, 2.3), Vector3(0.36, 0.56, 2.33))
 	WS.get_obj("hud").close_note()
-	for n in range(1, 10):
+	for n in range(1, 6):
 		print("[night %d] %s" % [n, str(tm.tasks.map(func(t): return t.id))])
 		await secs(0.7)
 		var pre_done: Array = tm.tasks.filter(func(t): return t.essential and t.done).map(func(t): return t.id)
@@ -83,6 +86,14 @@ func _run() -> void:
 			if t.essential or t.id in ["hall_light", "look_kitchen_window"]:
 				ok(t.done, "night %d: '%s' ticks off" % [n, t.text])
 		ok(tm.essentials_done(), "night %d: essentials done" % n)
+		if n == 4:
+			await _hall_scene()
+		if n == 5:
+			var alone: Array = tm.tasks.filter(func(t): return t.id == "alone")
+			ok(alone.size() == 1 and alone[0].text == "Make sure you're alone." and not alone[0].essential,
+				"night 5: 'Make sure you're alone.' is on the list and never blocks bed")
+			await _last_task()
+			break
 		var prompt: String = await use(Vector3(2.4, 0.02, 3.4), Vector3(1.15, 0.5, 3.5), "Sleep")
 		await secs(9.0)
 		if n == 3:
@@ -100,6 +111,61 @@ func _run() -> void:
 	print("warnings: ", WS.warnings)
 	print("%d checks, %d failures" % [checks, fails])
 	quit(1 if fails > 0 else 0)
+
+
+## Night 4: the bed refuses until the silhouette has walked into the bedroom.
+func _hall_scene() -> void:
+	var hs = WS.get_obj("hall_scene")
+	var tv = WS.get_obj("tv")
+	if tv.power:
+		tv.set_power(false, 0, true)
+	await use(Vector3(2.4, 0.02, 3.4), Vector3(1.15, 0.5, 3.5), "Sleep")
+	await secs(4.0)
+	ok(int(WS.get_state("night")) == 4 and not nm.sleeping, "night 4: can't sleep before the hallway scene")
+	ok(tv.power, "night 4: the TV downstairs turned itself on")
+	await use(Vector3(14.3, 0.02, 8.6), Vector3(15.52, 0.8, 8.6), "Turn off")
+	ok(not tv.power, "night 4: TV turned off")
+	# coming back through the foyer: it is standing in the hall
+	p.global_position = house.to_global(Vector3(6.9, 0.02, 10.2))
+	p.set_look(-90.0, 0.0)
+	await secs(1.0)
+	ok(hs.state == hs.S.PLACED, "night 4: a figure is waiting in the hallway (state %d)" % hs.state)
+	p.global_position = house.to_global(Vector3(4.9, 0.02, 9.3))
+	look_at_world(house.to_global(Vector3(4.88, 1.5, 5.05)))
+	await secs(1.0)
+	ok(hs.state == hs.S.SEEN, "night 4: it is seen, and it doesn't move")
+	await secs(2.0)
+	ok(hs.f.global_position.distance_to(house.to_global(hs.STAND)) < 0.05, "night 4: still standing there")
+	await secs(16.0)
+	ok(hs.done(), "night 4: it walked into the bedroom and is gone")
+	var note = WS.get_obj("pillow_note")
+	ok(note != null and note.text == "Don't wake him up.", "night 4: a note on the pillow")
+	var pr: String = await use(Vector3(1.0, 0.02, 2.45), hs.NOTE_AT, "Read")
+	ok(pr == "Read" and WS.get_obj("hud").is_reading(), "night 4: the note can be read")
+	WS.get_obj("hud").close_note()
+
+
+## Night 5: lying down does not lead to a sixth night.
+func _last_task() -> void:
+	var gm = root.get_node("GameManager")
+	await use(Vector3(2.4, 0.02, 3.4), Vector3(1.15, 0.5, 3.5), "Sleep")
+	await secs(4.0)
+	ok(gm.ending == "last_task", "night 5: sleeping starts FINAL 2 (ending '%s')" % gm.ending)
+	var e = WS.get_obj("last_task_ending")
+	var seen := {}
+	var whisper_sub := ""
+	var t := 0.0
+	while t < 75.0 and e and e.phase != "done":
+		await secs(0.1)
+		t += 0.1
+		seen[e.phase] = true
+		var sub: String = WS.get_obj("hud").subtitle.text
+		if sub != "":
+			whisper_sub = sub
+	for ph in ["steps", "door", "stopped", "mattress", "whisper", "scare", "blackout", "title", "done"]:
+		ok(seen.has(ph), "FINAL 2 goes through '%s'" % ph)
+	ok(whisper_sub == "You forgot to check the tape.", "the whisper says exactly 'You forgot to check the tape.' ('%s')" % whisper_sub)
+	ok(int(WS.get_state("night")) == 5, "there is no night 6")
 
 
 func _do(id: String) -> void:

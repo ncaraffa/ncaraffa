@@ -3,10 +3,15 @@ extends Node
 ## Consecutive nights. Night 1 starts when you press PLAY. When the essential
 ## chores are done you may lie down: the screen fades, the sound of the house
 ## falls away, a small "Night N" appears, and you wake to the next night.
+## There are FIVE nights and no more. Lying down at the end of the fifth one
+## does not lead to a sixth (see LastTaskEnding). Playing the tape found in the
+## house ends the story earlier (see TapeEnding).
 ## The world is never reset: what moved stays moved. A few things change while
 ## you sleep, and some odd instructions may (or may not) have consequences.
 
 signal night_started(n: int)
+
+const MAX_NIGHTS := 5
 
 var night := 1
 var sleeping := false
@@ -116,6 +121,8 @@ func _scatter_mugs() -> void:
 func request_sleep() -> void:
 	if sleeping:
 		return
+	if GameManager.ending != "":
+		return
 	if interrupted:
 		# woken up in the middle of the night: just go back to sleep
 		sleep()
@@ -125,6 +132,9 @@ func request_sleep() -> void:
 	if tm and not tm.essentials_done():
 		if hud:
 			hud.thought("I still have things to do.")
+		return
+	var hs = WorldState.get_obj("hall_scene")
+	if hs and hs.blocks_sleep():
 		return
 	sleep()
 
@@ -153,11 +163,20 @@ func sleep() -> void:
 		return
 	interrupted = false
 	WorldState.set_state("night/interrupted", false)
+	if night >= MAX_NIGHTS:
+		# there is no sixth night
+		var last := LastTaskEnding.new()
+		get_tree().current_scene.add_child(last)
+		last.start()
+		return
 	_judge_instructions()
 	night += 1
 	WorldState.set_state("night", night)
-	_overnight(night)
 	var cult = WorldState.get_obj("cult")
+	if cult:
+		# whatever was left by the last night's rituals is gone by now
+		cult.clear_temporary()
+	_overnight(night)
 	if cult:
 		cult.advance(night)
 	var tm = WorldState.get_obj("tasks")

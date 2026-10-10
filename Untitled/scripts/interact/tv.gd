@@ -34,15 +34,27 @@ func setup(id: String) -> void:
 	sound = AudioManager.make_emitter(self, "tv_static", Vector3(0, 0.3, 0.2), 0.0, -1.0, -1.0, false)
 	channel_label = B.label(self, "CH 03", Vector3(-0.2, 0.42, 0.206), 0.0012, Color(0.9, 1.0, 0.9), Vector3.ZERO, 32, true)
 	channel_label.visible = false
-	B.interact_area(self, Vector3(0.75, 0.6, 0.55), Vector3(0, 0.28, 0))
+	B.interact_area(self, Vector3(0.75, 0.5, 0.55), Vector3(0, 0.33, 0))
 	_apply()
 
 
 func get_prompt() -> String:
+	var p = WorldState.player
+	if p and p.held and accepts(p.held):
+		return "Put the tape in"
 	return "Turn off" if power else "Turn on"
 
 
-func interact(_player: Node) -> void:
+## Holding the tape and looking at the set: it goes into the deck underneath.
+func accepts(item) -> bool:
+	var deck = WorldState.get_obj("vcr")
+	return deck != null and deck.accepts(item)
+
+
+func interact(player: Node) -> void:
+	if player and player.get("held") and accepts(player.held):
+		WorldState.get_obj("vcr").interact(player)
+		return
 	if power:
 		set_power(false)
 	else:

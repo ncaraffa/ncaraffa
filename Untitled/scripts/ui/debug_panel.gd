@@ -122,6 +122,28 @@ func _build_tabs(tabs: TabContainer) -> void:
 	_btn(nr, "sleep now (next night)", func(): WorldState.get_obj("night_manager").sleep())
 	_btn(nr, "add late list line", func(): WorldState.get_obj("tasks")._add_late_line())
 	_btn(nr, "3 am awakening now", func(): WorldState.get_obj("night_manager")._night_waking())
+	_btn(nr, "hall silhouette (night 4) now", func(): WorldState.get_obj("hall_scene").debug_force())
+	var cr := _row(nt, "cult:")
+	for kind in ["altar_b2", "chalk_back_door", "kitchen_circle", "garage_candles", "porch_candles", "island_ring",
+			"wall_writing", "mirror_sigil", "inverted_cross", "dining_ritual", "wardrobe_sigil"]:
+		_btn(cr, kind, func(): WorldState.get_obj("cult").spawn(kind, "night"))
+	_btn(cr, "small sigil", func(): WorldState.get_obj("cult").small_sigil())
+	_btn(cr, "list active", func(): info.text = str(WorldState.get_obj("cult").active_kinds()))
+	_btn(cr, "clear temporary", func(): WorldState.get_obj("cult").clear_temporary())
+	var er := _row(nt, "endings:")
+	_btn(er, "give me the tape", func(): _give_tape())
+	_btn(er, "play the tape now (FINAL 1)", func():
+		_close_for_ending()
+		var te := TapeEnding.new()
+		get_tree().current_scene.add_child(te)
+		te.start(WorldState.get_obj("tv") as TV, WorldState.get_obj("vcr")))
+	_btn(er, "last task now (FINAL 2)", func():
+		_close_for_ending()
+		var nm = WorldState.get_obj("night_manager")
+		nm.night = nm.MAX_NIGHTS
+		WorldState.set_state("night", nm.MAX_NIGHTS)
+		WorldState.get_obj("tasks").debug_complete()
+		nm.sleep())
 	# ---------------- audio
 	var au := _tab(tabs, "Audio")
 	var ar := _row(au, "sound:")
@@ -199,12 +221,25 @@ func _process(delta: float) -> void:
 	for b in ["Master", "SFX", "Ambience", "Horror"]:
 		var idx := AudioServer.get_bus_index(b)
 		meters += "%s %.0f  " % [b, max(-80.0, AudioServer.get_bus_peak_volume_left_db(idx, 0))]
-	status.text = "night %d | real %.0fs | clock %s | main next %.0fs (%d/10) | side next %.0fs\nscares: armed=%s tonight %d/%d recovering %.0fs tension %.2f | running %s\nplayer %s inside=%s | peaks dB: %s" % [
-		int(WorldState.get_state("night", 1)), WorldState.sim_time, WorldState.format_clock(WorldState.clock_minutes()),
+	status.text = "[%s] night %d | real %.0fs | clock %s | main next %.0fs (%d/10) | side next %.0fs\nscares: armed=%s tonight %d/%d recovering %.0fs tension %.2f | running %s\nplayer %s inside=%s | peaks dB: %s" % [
+		director.pace, int(WorldState.get_state("night", 1)), WorldState.sim_time, WorldState.format_clock(WorldState.clock_minutes()),
 		director.time_to_next(), director.main_events().filter(func(e): return director.fired.has(e.id)).size(),
 		max(0.0, director.side_next_at - director.clock),
 		scares.armed.id if scares.armed else "-", scares.fired_tonight, scares.quota(), max(0.0, scares.recover_until - WorldState.sim_time), scares.tension,
 		str(running), str(pos.snapped(Vector3.ONE * 0.1)), WorldState.player_inside, meters]
+
+
+func _give_tape() -> void:
+	var t = WorldState.get_obj("vhs_tape")
+	var p = WorldState.player
+	if t and p:
+		t.global_position = p.camera.global_position - p.camera.global_basis.z * 0.6
+		t.interact(p)
+
+
+func _close_for_ending() -> void:
+	root.visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _spawn_figure(where: String) -> void:

@@ -6,6 +6,7 @@ extends Node
 ## (e.g. `godot --path . -- --dev`). A normal exported build never shows them.
 
 signal settings_changed
+signal ending_finished(which: String)
 
 const SETTINGS_PATH := "user://settings.cfg"
 const MENU_SCENE := "res://scenes/main_menu.tscn"
@@ -27,6 +28,10 @@ var settings := {
 
 var dev_mode := false
 var in_game := false
+## "" while the story runs; "tape" or "last_task" once one of the two endings began.
+var ending := ""
+## Tests switch this off to stay in the world after an ending.
+var ending_returns_to_menu := true
 
 
 func _ready() -> void:
@@ -102,6 +107,8 @@ func apply_settings() -> void:
 
 
 func start_game() -> void:
+	ending = ""
+	get_viewport().disable_3d = false
 	WorldState.reset()
 	in_game = true
 	get_tree().paused = false
@@ -114,6 +121,27 @@ func return_to_menu() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	AudioManager.stop_all()
 	get_tree().change_scene_to_file(MENU_SCENE)
+
+
+## One of the two endings takes over. Returns false if one already did.
+func begin_ending(which: String) -> bool:
+	if ending != "":
+		return false
+	ending = which
+	WorldState.set_state("ending", which)
+	WorldState.log_event("ending", which, {"intensity": 3})
+	return true
+
+
+## Called after the name has faded: back to the menu, ready for a new game.
+func finish_ending() -> void:
+	var which := ending
+	ending_finished.emit(which)
+	if not ending_returns_to_menu:
+		return
+	AudioManager.stop_all()
+	AudioManager.fade_world(0.0, 0.05)
+	return_to_menu()
 
 
 func restart_world() -> void:

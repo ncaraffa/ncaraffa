@@ -55,23 +55,13 @@ func generate(n: int) -> void:
 				_t("lights", "Lights off downstairs before bed"),
 				_t("back_door_shut", "Don't leave the back door open", false, true),
 				_t("hall_light", "Turn off the hallway light", false, true)]
-		5:
+		_:
+			# the fifth night is the last one. "Make sure you're alone." has no
+			# way to be ticked off, and it never stops you from going to bed.
 			tasks = [_t("trash", "Take out the trash"), _t("stove", "Check the stove"), _t("lock_back", "Lock the back door"),
 				_t("lock_front", "Lock the front door"), _t("mail", "Check the mailbox"), _t("lights", "Lights off downstairs before bed"),
-				_t("no_look_6", "Don't look at house number 6", false, true)]
-		_:
-			var pool := [_t("trash", "Take out the trash"), _t("dishes", "Wash the dishes"), _t("windows", "Close the windows"),
-				_t("stove", "Check the stove"), _t("lock_back", "Lock the back door"), _t("lock_front", "Lock the front door"),
-				_t("mugs", "Put the mugs in the kitchen sink"), _t("garage", "Close the garage door")]
-			pool.shuffle()
-			tasks = pool.slice(0, 3)
-			tasks.append(_t("mail", "Check the mailbox"))
-			tasks.append(_t("lights", "Lights off downstairs before bed"))
-			var odd := [_t("look_kitchen_window", "Check the kitchen window", false, true),
-				_t("back_door_shut", "Don't leave the back door open", false, true),
-				_t("hall_light", "Turn off the hallway light", false, true),
-				_t("no_look_6", "Don't look at house number 6", false, true)]
-			tasks.append(odd[rng.randi() % odd.size()])
+				_t("no_look_6", "Don't look at house number 6", false, true),
+				_t("alone", "Make sure you're alone.", false, true)]
 	WorldState.set_state("tasks/night", n)
 	list_changed.emit()
 
@@ -85,10 +75,6 @@ func _add_late_line() -> void:
 			lines = [_t("no_look_6", "don't look at number 6", false, true, 1)]
 		5:
 			lines = [_t("no_phone", "don't answer the phone", false, true, 1)]
-		_:
-			if night >= 6:
-				var opts := ["count the chairs", "leave the porch light on", "don't open the closet", "it's not your house"]
-				lines = [_t("late_%d" % night, opts[rng.randi() % opts.size()], false, true, 1)]
 	for l in lines:
 		var exists := false
 		for t in tasks:

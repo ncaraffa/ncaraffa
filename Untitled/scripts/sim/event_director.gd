@@ -40,14 +40,32 @@ const EVENT_SCRIPTS := [
 	"res://scripts/events/ev_whisper.gd",
 	"res://scripts/events/ev_door_creak.gd",
 	"res://scripts/events/ev_flicker.gd",
+	"res://scripts/events/ev_glass_tap.gd",
+	"res://scripts/events/ev_phone_once.gd",
+	"res://scripts/events/ev_door_found_open.gd",
+	"res://scripts/events/ev_room_drag.gd",
+	"res://scripts/events/ev_manifest.gd",
+	"res://scripts/events/ev_object_moved.gd",
+	"res://scripts/events/ev_tv_on.gd",
 ]
 
-const FIRST_DELAY := Vector2(120.0, 180.0)
-const INTERVAL := Vector2(240.0, 360.0)
-const AFTER_INTERVAL := Vector2(300.0, 600.0)
+const FIRST_DELAY := Vector2(90.0, 150.0)
+const INTERVAL := Vector2(180.0, 300.0)
+const AFTER_INTERVAL := Vector2(240.0, 420.0)
 ## side-track spacing per night (index = night, last value reused)
-const SIDE_INTERVAL := [Vector2(0, 0), Vector2(200, 340), Vector2(150, 260), Vector2(120, 220), Vector2(100, 190), Vector2(90, 170)]
+const SIDE_INTERVAL := [Vector2(0, 0), Vector2(110, 200), Vector2(90, 170), Vector2(80, 150), Vector2(70, 135), Vector2(60, 120)]
 const RETRY := 20.0
+
+## The night breathes. Tension rises and falls on its own cycle instead of
+## staying flat: long calm stretches, a build-up, a peak, a release.
+## [gap multiplier for the side track, highest intensity allowed, duration range]
+const PACE := {
+	"calm": [1.6, 1, Vector2(150, 260)],
+	"build": [0.9, 2, Vector2(110, 200)],
+	"peak": [0.55, 3, Vector2(70, 130)],
+	"release": [1.25, 1, Vector2(90, 160)],
+}
+const PACE_ORDER := ["calm", "build", "peak", "release"]
 
 var events: Array = []
 var clock := 0.0             # seconds, scaled by time_scale
@@ -62,6 +80,8 @@ var seed_used := 0
 var rng := RandomNumberGenerator.new()
 var last_main_start := -999.0
 var _timers: Array = []      # [{at, fn}]
+var pace := "calm"
+var pace_until := 0.0
 
 
 func _ready() -> void:
@@ -79,6 +99,7 @@ func _ready() -> void:
 		add_child(ev)
 		events.append(ev)
 	next_at = rng.randf_range(FIRST_DELAY.x, FIRST_DELAY.y)
+	pace_until = rng.randf_range(PACE.calm[2].x, PACE.calm[2].y)
 	side_next_at = _side_gap()
 	WorldState.register("director", self)
 
@@ -86,13 +107,35 @@ func _ready() -> void:
 func new_night(n: int) -> void:
 	night = n
 	tonight.clear()
+	pace = "calm"
+	pace_until = clock + rng.randf_range(PACE.calm[2].x, PACE.calm[2].y)
 	next_at = clock + rng.randf_range(FIRST_DELAY.x, FIRST_DELAY.y)
 	side_next_at = clock + _side_gap() * rng.randf_range(0.6, 1.0)
 
 
 func _side_gap() -> float:
 	var span: Vector2 = SIDE_INTERVAL[min(night, SIDE_INTERVAL.size() - 1)]
-	return rng.randf_range(span.x, span.y)
+	return rng.randf_range(span.x, span.y) * float(PACE[pace][0])
+
+
+func _update_pace() -> void:
+	if clock < pace_until:
+		return
+	var i := PACE_ORDER.find(pace)
+	pace = PACE_ORDER[(i + 1) % PACE_ORDER.size()]
+	# the first night never really peaks
+	if night <= 1 and pace == "peak":
+		pace = "release"
+	var dur: Vector2 = PACE[pace][2]
+	pace_until = clock + rng.randf_range(dur.x, dur.y)
+	WorldState.set_state("director/pace", pace)
+	# a build-up brings the next strange thing closer
+	if pace == "build" or pace == "peak":
+		side_next_at = minf(side_next_at, clock + rng.randf_range(20.0, 60.0))
+
+
+func max_intensity() -> int:
+	return int(PACE[pace][1])
 
 
 func _process(delta: float) -> void:
@@ -109,8 +152,9 @@ func _process(delta: float) -> void:
 	var p = WorldState.player
 	if p and p.get("sleeping") == true:
 		return
-	if WorldState.get_state("night/interrupted", false):
+	if WorldState.get_state("night/interrupted", false) or GameManager.ending != "" or WorldState.get_state("scene/active", false):
 		return
+	_update_pace()
 	if clock >= next_at:
 		_fire_main()
 	if clock >= side_next_at:
@@ -187,6 +231,8 @@ func _fire_side() -> void:
 		if int(tonight.get(ev.id, 0)) >= ev.max_per_night:
 			continue
 		if ev.intensity >= 2 and sd and sd.is_recovering():
+			continue
+		if ev.intensity > max_intensity():
 			continue
 		if _available(ev):
 			pool.append(ev)

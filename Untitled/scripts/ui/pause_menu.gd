@@ -43,6 +43,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if GameManager.ending != "":
+		return
 	if event.is_action_pressed("pause"):
 		if root.visible:
 			_resume()

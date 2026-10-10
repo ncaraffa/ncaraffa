@@ -32,6 +32,13 @@ var _twitch_t := 0.0
 var _lean := 0.0
 var _arm_raise := 0.0
 var _moving := false
+## Head driven from outside (degrees, relative to the neck) instead of looking at a target.
+var head_manual := false
+var head_rot := Vector3.ZERO
+## An ordinary person (coloured clothes, no smoke, no twitches). Used on the tape
+## and for the neighbours coming home.
+var is_person := false
+var _sprint := false
 
 
 func _ready() -> void:
@@ -147,6 +154,8 @@ func _hide() -> void:
 	_dissolve = 1.0
 	_dissolve_target = 1.0
 	_moving = false
+	_sprint = false
+	head_manual = false
 	_lean = 0.0
 	_arm_raise = 0.0
 	head_tilt = 0.0
@@ -203,6 +212,73 @@ func set_rim(strength: float) -> void:
 	mat.set_shader_parameter("rim_strength", strength)
 
 
+## Turn this body into an ordinary person: shirt, trousers, skin, hair.
+func make_person(shirt: Color, pants: Color, skin := Color(0.78, 0.6, 0.5), hair := Color(0.16, 0.11, 0.08)) -> void:
+	is_person = true
+	var m_shirt := Mats.color(shirt, 0.85)
+	var m_pants := Mats.color(pants, 0.9)
+	var m_skin := Mats.color(skin, 0.7)
+	var m_hair := Mats.color(hair, 0.95)
+	var m_shoe := Mats.color(Color(0.08, 0.07, 0.06), 0.6)
+	for key in parts:
+		var piv: Node3D = parts[key]
+		var mat_for: Material = m_shirt
+		if key in ["hips", "l_hip", "r_hip", "l_knee", "r_knee"]:
+			mat_for = m_pants
+		elif key in ["l_foot", "r_foot"]:
+			mat_for = m_shoe
+		elif key in ["neck", "head", "l_hand", "r_hand"]:
+			mat_for = m_skin
+		for c in piv.get_children():
+			if c is MeshInstance3D:
+				c.material_override = mat_for
+				for sh in c.get_children():
+					if sh is MeshInstance3D:
+						sh.visible = false
+	# hair: a cap over the back and top of the head
+	var hm := SphereMesh.new()
+	hm.radius = 0.11
+	hm.height = 0.2
+	var hair_mi := MeshInstance3D.new()
+	hair_mi.mesh = hm
+	hair_mi.material_override = m_hair
+	parts.head.add_child(hair_mi)
+	hair_mi.position = Vector3(0, 0.17, -0.025)
+	hair_mi.scale = Vector3(1.0, 0.85, 1.08)
+	# a loose shirt over the chest and waist, so the body reads as one piece
+	var tm := CapsuleMesh.new()
+	tm.radius = 0.18
+	tm.height = 0.7
+	var torso := MeshInstance3D.new()
+	torso.mesh = tm
+	torso.material_override = m_shirt
+	parts.spine.add_child(torso)
+	torso.position = Vector3(0, 0.33, 0.0)
+	torso.scale = Vector3(1.12, 1.0, 0.74)
+	for side in ["l", "r"]:
+		var sm := CapsuleMesh.new()
+		sm.radius = 0.062
+		sm.height = 0.34
+		var sleeve := MeshInstance3D.new()
+		sleeve.mesh = sm
+		sleeve.material_override = m_shirt
+		parts[side + "_shoulder"].add_child(sleeve)
+		sleeve.position = Vector3(0, -0.14, 0)
+
+
+## From complete stillness to right there. Not a walk: a violent rush.
+func sprint(to: Vector3, dur := 0.28) -> Tween:
+	state = State.SCARE
+	_sprint = true
+	_moving = false
+	_lean = 0.55
+	_arm_raise = 0.15
+	head_manual = false
+	var tw := create_tween()
+	tw.tween_property(self, "global_position", to, dur).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	return tw
+
+
 # ------------------------------------------------------------------ animation
 func _process(delta: float) -> void:
 	if state == State.HIDDEN:
@@ -248,9 +324,11 @@ func _animate(delta: float) -> void:
 	var breath := sin(_t * 1.7) * 0.012
 	parts.spine.scale = Vector3(1.0, 1.0 + breath, 1.0 + breath * 0.5)
 	var sway := sin(_t * 0.6) * 0.8
-	var walking := _moving
+	var walking := _moving or _sprint
+	if _sprint:
+		_walk_phase += delta * 38.0
 	var sw := sin(_walk_phase) if walking else 0.0
-	var amp := 26.0 if walking else 0.0
+	var amp := (52.0 if _sprint else 26.0) if walking else 0.0
 	parts.l_hip.rotation_degrees.x = sw * amp
 	parts.r_hip.rotation_degrees.x = -sw * amp
 	parts.l_knee.rotation_degrees.x = max(0.0, -sw) * amp * 1.3 if walking else 2.0
@@ -274,9 +352,14 @@ func _animate(delta: float) -> void:
 		var lp := neck.global_transform.affine_inverse() * look_target.global_position
 		yaw = clamp(rad_to_deg(atan2(lp.x, lp.z)), -70.0, 70.0)
 		pitch = clamp(rad_to_deg(atan2(-lp.y, Vector2(lp.x, lp.z).length())), -30.0, 30.0)
+	if head_manual:
+		head.rotation_degrees = head_rot
+		return
 	var cur := head.rotation_degrees
 	var target := Vector3(pitch - 14.0, yaw, head_tilt + 5.0)
 	head.rotation_degrees = cur.lerp(target, clamp(delta * 2.5, 0.0, 1.0))
+	if is_person:
+		return
 	if _twitch_t > 0.0:
 		_twitch_t -= delta
 		head.rotation_degrees += Vector3(randf_range(-9, 9), randf_range(-14, 14), randf_range(-12, 12))

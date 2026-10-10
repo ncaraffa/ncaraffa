@@ -600,6 +600,110 @@ def chores():
     save("object_fall", room(out, 0.3, 0.3))
 
 
+# ------------------------------------------------------------------ the tape / endings
+def endings():
+    # VHS playback hiss: tape noise, a faint 15.7 kHz-ish whine folded down, motor hum
+    d = 6.0
+    tt = t(d)
+    hiss = bp(noise(d), 1200, 9000) * 0.5 + lp(noise(d), 400) * 0.15
+    hum = np.sin(2 * np.pi * 60 * tt) * 0.05 + np.sin(2 * np.pi * 120 * tt) * 0.03
+    flutter = 1 + 0.08 * np.sin(2 * np.pi * 0.7 * tt) + 0.05 * np.sin(2 * np.pi * 3.1 * tt)
+    save("vhs_hiss", loopable((hiss + hum) * flutter, 0.5))
+    # cassette pushed into the deck: plastic slide, clunk, motor spin-up
+    slide = bp(noise(0.35), 800, 5000) * _env(int(0.35 * SR), 0.02, 0.15)
+    clunk = thump(140, 0.4, 0.05, 0.9, 300, 4000)
+    m = t(1.6)
+    motor = (signal.sawtooth(2 * np.pi * np.cumsum(np.linspace(30, 95, len(m))) / SR) * 0.25 + bp(noise(1.6), 300, 1800) * 0.2)
+    motor *= np.minimum(1, m / 0.2) * np.exp(-np.maximum(0, m - 1.1) * 6)
+    out = mix(slide, np.concatenate([np.zeros(int(0.3 * SR)), clunk]), np.concatenate([np.zeros(int(0.55 * SR)), lp(motor, 2500)]))
+    save("vhs_insert", room(out, 0.25, 0.2))
+    # THE RUN: 0.27 s rising rush, a monstrous impact, a short screech (cut by the game)
+    def big_scare(seed, d, rush, scream_hi):
+        r = np.random.default_rng(seed)
+        n = int(d * SR)
+        tt = np.arange(n) / SR
+        rise = np.clip(tt / rush, 0, 1) ** 3 * (tt < rush)
+        whoosh = bp(noise(d), 300, 6000) * rise * 1.2
+        hit = np.zeros(n)
+        i0 = int(rush * SR)
+        k = n - i0
+        kt = np.arange(k) / SR
+        sub = np.sin(2 * np.pi * np.cumsum(np.linspace(90, 26, k)) / SR) * np.exp(-kt / 0.6)
+        crack = hp(R.standard_normal(k), 900) * np.exp(-kt / 0.06)
+        scr = np.zeros(k)
+        for j in range(7):
+            f0 = r.uniform(500, scream_hi)
+            f = f0 * (1 + 0.04 * np.sin(2 * np.pi * r.uniform(6, 13) * kt)) * (1 - 0.15 * kt / max(kt[-1], 1e-3))
+            scr += signal.sawtooth(2 * np.pi * np.cumsum(f) / SR) * r.uniform(0.5, 1.0)
+        scr = bp(scr, 600, 5200) * (1 - np.exp(-kt / 0.01)) * np.exp(-kt / 0.9)
+        body = bp(R.standard_normal(k), 60, 500) * np.exp(-kt / 0.3)
+        hit[i0:] = sub * 1.2 + crack * 1.0 + scr * 0.7 + body * 0.8
+        x = np.tanh((whoosh + hit) * 2.2)
+        return room(x, 0.5, 0.25, 4000)[:n]
+    save("tape_scare", big_scare(1700, 3.0, 0.27, 2100))
+    save("final_scare", big_scare(1800, 3.0, 0.08, 2400))
+    # the mattress taking someone's weight: springs + slow wood creak + fabric
+    d = 2.2
+    tt = t(d)
+    springs = np.zeros(len(tt))
+    for f, a in ((310, 1.0), (467, 0.6), (690, 0.4), (1130, 0.25)):
+        springs += np.sin(2 * np.pi * f * tt * (1 + 0.01 * np.sin(2 * np.pi * 5 * tt))) * a
+    springs *= _env(len(tt), 0.25, 0.35) * 0.25
+    cr = creak(1.6, 140, 95, 0.8, 7)
+    fabric = bp(noise(d), 1500, 6000) * np.sin(np.linspace(0, np.pi, len(tt))) ** 2 * 0.25
+    save("mattress_creak", room(mix(springs, cr * 0.8, fabric), 0.2, 0.15))
+    # fingernail taps on glass
+    out = np.zeros(int(2.6 * SR))
+    for k, tm in enumerate((0.0, 0.9, 1.75)):
+        tap = np.zeros(int(0.3 * SR))
+        tp = t(0.3)
+        for f, a in ((2900, 1.0), (4300, 0.6), (6100, 0.35)):
+            tap += np.sin(2 * np.pi * f * tp) * a
+        tap = tap * _env(len(tp), 0.0005, 0.03) + hp(noise(0.3), 3000) * _env(len(tp), 0.0005, 0.006) * 0.8
+        i0 = int(tm * SR)
+        out[i0:i0 + len(tap)] += tap * (0.8 + 0.1 * k)
+    save("glass_tap", room(out, 0.25, 0.25))
+    # heavy furniture dragged across a wooden floor, somewhere
+    d = 2.4
+    tt = t(d)
+    stick = np.abs(np.sin(2 * np.pi * (14 + 6 * np.sin(2 * np.pi * 0.5 * tt)) * tt)) ** 6
+    drag = bp(noise(d), 120, 1400) * (0.4 + stick) + 0.5 * creak(d, 90, 70, 0.9, 9)[: len(tt)]
+    drag *= np.sin(np.linspace(0, np.pi, len(tt))) ** 0.5
+    save("furniture_drag", room(drag, 0.35, 0.3))
+    # something passing very fast: a rush of air
+    d = 0.9
+    tt = t(d)
+    e = np.exp(-((tt - 0.35) / 0.12) ** 2)
+    save("whoosh", bp(noise(d), 250, 4000) * e + lp(noise(d), 200) * e * 0.6)
+
+
+def whisper_tape():
+    """'You forgot to check the tape.' Very close, breathy, slow."""
+    parts = []
+    for voice, pitch, amp in (("en-us+whisper", "30", 1.0), ("en-us+whisperf", "20", 0.45)):
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+            path = tf.name
+        try:
+            subprocess.run(["espeak-ng", "-v", voice, "-s", "105", "-p", pitch, "-g", "6",
+                            "You forgot to check the tape.", "-w", path], check=True, capture_output=True)
+            with wave.open(path) as wv:
+                sr = wv.getframerate()
+                x = np.frombuffer(wv.readframes(wv.getnframes()), np.int16).astype(float) / 32768
+            x = signal.resample(x, int(len(x) * SR / sr))
+        except Exception as e:
+            print("espeak failed", e)
+            x = np.zeros(SR)
+        parts.append(x * amp)
+    L = max(len(p) for p in parts) + int(0.03 * SR)
+    v = np.zeros(L)
+    v[: len(parts[0])] += parts[0]
+    v[int(0.03 * SR): int(0.03 * SR) + len(parts[1])] += parts[1]
+    # breath on the ear: low-frequency proximity rumble + lip noise
+    v = v + lp(v, 300) * 0.8
+    pre = bp(noise(0.5), 400, 2500) * np.sin(np.linspace(0, np.pi, int(0.5 * SR))) * 0.06
+    save("whisper_tape", np.concatenate([pre, v, np.zeros(int(0.3 * SR))]))
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
@@ -617,3 +721,5 @@ if __name__ == "__main__":
     animals()
     horror()
     chores()
+    endings()
+    whisper_tape()

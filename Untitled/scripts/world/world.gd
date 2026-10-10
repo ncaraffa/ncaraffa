@@ -9,6 +9,7 @@ var director: EventDirector
 
 
 func _ready() -> void:
+	GameManager.ending = ""
 	if not GameManager.in_game:
 		# launched directly (editor "Run Current Scene" or tests)
 		WorldState.reset()
@@ -35,6 +36,7 @@ func _ready() -> void:
 	director = EventDirector.new()
 	add_child(director)
 	add_child(ScareDirector.new())
+	add_child(HallScene.new())
 	var nights := NightManager.new()
 	add_child(nights)
 	nights.begin()

@@ -18,11 +18,13 @@ const SCARE_SCRIPTS := [
 	"res://scripts/horror/scares/scare_window.gd",
 	"res://scripts/horror/scares/scare_behind.gd",
 	"res://scripts/horror/scares/scare_tv.gd",
+	"res://scripts/horror/scares/scare_runner.gd",
+	"res://scripts/horror/scares/scare_contort.gd",
 ]
-## Max intense scares per night (night >= 6 uses the last value).
-const QUOTA := [0, 0, 0, 1, 2, 2, 2]
+## Max intense scares per night (index = night; there are five).
+const QUOTA := [0, 0, 1, 1, 2, 3]
 ## Chance per evaluation (every ~20 s) to arm something, before tension.
-const BASE_CHANCE := [0.0, 0.0, 0.0, 0.10, 0.14, 0.17, 0.17]
+const BASE_CHANCE := [0.0, 0.0, 0.09, 0.12, 0.16, 0.2]
 
 var scares: Array = []
 var night := 1
@@ -92,6 +94,8 @@ func _process(delta: float) -> void:
 	tension = max(0.0, tension - delta * 0.002)
 	if not enabled or armed != null:
 		return
+	if GameManager.ending != "" or WorldState.get_state("scene/active", false):
+		return
 	_eval_t += delta
 	if _eval_t < 20.0:
 		return
@@ -99,6 +103,10 @@ func _process(delta: float) -> void:
 	if fired_tonight >= quota() or is_recovering() or player_busy():
 		return
 	if now() - night_started < 240.0:
+		return
+	# only when the night is building up or peaking (EventDirector pace)
+	var dir = WorldState.get_obj("director")
+	if dir and not dir.pace in ["build", "peak"]:
 		return
 	var p: float = BASE_CHANCE[min(night, BASE_CHANCE.size() - 1)] * (0.6 + tension)
 	if rng.randf() > p:
@@ -167,7 +175,7 @@ func on_scare_done(s: Scare, happened: bool, reason: String) -> void:
 		last_id = s.id
 		tension = 0.25
 		# a long stretch of normality: the world needs to feel safe again
-		recover_until = now() + rng.randf_range(420.0, 720.0)
+		recover_until = now() + rng.randf_range(300.0, 540.0)
 		WorldState.log_event("scare_" + s.id, "fired", {"intensity": 3, "night": night})
 		scare_fired.emit(s.id)
 		_aftermath()

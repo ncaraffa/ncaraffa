@@ -12,7 +12,7 @@ func _init() -> void:
 
 
 func can_arm() -> bool:
-	return WorldState.player_inside
+	return WorldState.player_inside and not WorldState.is_locked("figure_inside")
 
 
 func _watch(_d: float) -> void:

@@ -49,15 +49,20 @@ const MIX := {
 	"breath_close": [3.0, 1.2, 6.0, "horror"], "whisper": [1.0, 1.5, 8.0, "horror"], "window_bang": [4.0, 6.0, 40.0, "horror"],
 	"bang_door": [4.0, 9.0, 70.0, "horror"], "chant_far": [-5.0, 25.0, 140.0, "horror"], "drone_swell": [-11.0, 1.0, 1.0, "horror"],
 	"run_steps": [2.0, 5.0, 40.0, "horror"], "heartbeat": [-8.0, 1.0, 1.0, "horror"],
+	"glass_tap": [2.0, 4.0, 25.0, "horror"], "furniture_drag": [-1.0, 5.0, 35.0, "sfx"], "whoosh": [0.0, 4.0, 30.0, "horror"],
+	"mattress_creak": [0.0, 2.0, 10.0, "horror"],
+	# the tape and the endings (own buses, never faded with the world)
+	"vhs_hiss": [-15.0, 1.0, 1.0, "music"], "vhs_insert": [-2.0, 2.0, 12.0, "sfx"],
+	"tape_scare": [2.0, 1.0, 1.0, "music"], "final_scare": [2.0, 1.0, 1.0, "music"], "whisper_tape": [2.0, 1.0, 1.0, "music"],
 }
 
 const LOOPS := [
 	"crickets", "wind", "distant_traffic", "leaves", "fridge_hum", "computer_hum",
-	"tv_static", "tv_tone", "water", "lamp_buzz", "clock_tick", "car_engine",
+	"tv_static", "tv_tone", "water", "vhs_hiss", "lamp_buzz", "clock_tick", "car_engine",
 	"car_idle", "line_hiss", "garage_door", "chant_far", "elec_buzz", "gas_hiss",
 ]
 
-const BUSES := ["Ambience", "AmbIn", "AmbOut", "SFX", "SFXIn", "SFXOut", "Room", "Phone", "Horror", "Music", "UI"]
+const BUSES := ["Ambience", "AmbIn", "AmbOut", "SFX", "SFXIn", "SFXOut", "Room", "Phone", "Horror", "Music", "UI", "Tape", "Ending"]
 
 var _cache: Dictionary = {}
 var _oneshots: Array = []
@@ -109,6 +114,23 @@ func _setup_buses() -> void:
 	_add_bus("Horror", "Master", [hcomp])
 	_add_bus("Music", "Master")
 	_add_bus("UI", "Master")
+	# what was recorded on the tape: band-limited, a little saturated, mono-ish
+	var tlp := AudioEffectLowPassFilter.new()
+	tlp.cutoff_hz = 3400
+	var thp := AudioEffectHighPassFilter.new()
+	thp.cutoff_hz = 160
+	var tdist := AudioEffectDistortion.new()
+	tdist.mode = AudioEffectDistortion.MODE_OVERDRIVE
+	tdist.drive = 0.18
+	tdist.post_gain = -2.0
+	_add_bus("Tape", "Master", [thp, tlp, tdist])
+	# the last seconds of both endings: loud, but always under the master limiter
+	var ecomp := AudioEffectCompressor.new()
+	ecomp.threshold = -8.0
+	ecomp.ratio = 6.0
+	ecomp.attack_us = 200.0
+	ecomp.release_ms = 200.0
+	_add_bus("Ending", "Master", [ecomp])
 	GameManager.apply_settings.call_deferred()
 
 
@@ -292,6 +314,10 @@ func play_ui(sound_name: String, offset_db := 0.0) -> void:
 
 
 func stop_all() -> void:
+	for b in ["Tape", "Ending"]:
+		var bi := AudioServer.get_bus_index(b)
+		if bi != -1:
+			AudioServer.set_bus_volume_db(bi, 0.0)
 	for p in _oneshots:
 		if is_instance_valid(p):
 			p.queue_free()

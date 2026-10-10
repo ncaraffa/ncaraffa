@@ -24,6 +24,11 @@ const SCHEDULE := {
 	"creak": Vector2(50, 150),
 	"pipes": Vector2(240, 560),
 	"flicker": Vector2(120, 320),
+	# layer A additions: the street is alive, the house is old
+	"neighbor_home": Vector2(200, 420),
+	"outside_steps": Vector2(160, 380),
+	"wind_door": Vector2(150, 360),
+	"tv_crackle": Vector2(180, 420),
 }
 
 
@@ -64,6 +69,8 @@ func _beds() -> void:
 
 
 func _process(delta: float) -> void:
+	if GameManager.ending != "":
+		return
 	for k in _next.keys():
 		_next[k] -= delta
 		if _next[k] <= 0.0:
@@ -241,3 +248,76 @@ func _flicker_lamp(l: Dictionary) -> void:
 		light.light_energy = base
 		await get_tree().create_timer(rng.randf_range(0.05, 0.4), false).timeout
 	light.light_energy = base
+
+
+## A neighbour walks up to their front door and goes in. A light comes on.
+func _do_neighbor_home() -> void:
+	var hs := _houses()
+	if hs.is_empty():
+		return
+	var h: NeighborHouse = hs[rng.randi() % hs.size()]
+	var dx: float = h.get_meta("door_x", -1.5)
+	var start := h.to_global(Vector3(dx + rng.randf_range(-1.0, 1.0), 0.02, 9.0))
+	if Perception.dist(start) < 7.0:
+		return
+	var who := ShadowFigure.new()
+	who.name = "Neighbor"
+	get_tree().current_scene.add_child(who)
+	var shirts := [Color(0.3, 0.35, 0.45), Color(0.5, 0.2, 0.18), Color(0.6, 0.58, 0.5), Color(0.2, 0.3, 0.22)]
+	who.make_person(shirts[rng.randi() % shirts.size()], Color(0.18, 0.18, 0.2), Color(0.75, 0.58, 0.47).darkened(rng.randf() * 0.4))
+	who.look_target = null
+	who.set_rim(0.0)
+	who.appear(start, h.global_basis * Vector3(0, 0, -1))
+	who.walk_path(PackedVector3Array([h.to_global(Vector3(dx, 0.02, 2.2)), h.to_global(Vector3(dx, 0.16, 0.7))]), 1.05)
+	WorldState.log_event("ambient", "neighbor_home", {"family": h.family, "intensity": 0})
+	await who.finished_path
+	AudioManager.play_3d("door_close", h.to_global(Vector3(dx, 1.0, 0.0)), -2.0, 1.05, -1.0, -1.0, "Outdoor")
+	who.vanish("instant")
+	who.queue_free()
+	if h.window_count() > 0:
+		h.set_window(rng.randi() % h.window_count(), true)
+
+
+## Someone walks past outside, close to the wall of the room you are in.
+func _do_outside_steps() -> void:
+	var p = WorldState.player
+	var house = WorldState.get_obj("house")
+	if p == null or house == null or not WorldState.player_inside:
+		return
+	var lp: Vector3 = house.to_local(p.global_position)
+	# the nearest outside wall
+	var walls := [[lp.z, Vector3(0, 0, -1.2)], [11.0 - lp.z, Vector3(0, 0, 12.2)], [lp.x, Vector3(-1.2, 0, 0)], [16.0 - lp.x, Vector3(17.2, 0, 0)]]
+	walls.sort_custom(func(a, b): return a[0] < b[0])
+	var w: Vector3 = walls[0][1]
+	var along := Vector3(1, 0, 0) if w.x == 0.0 else Vector3(0, 0, 1)
+	var base := Vector3(lp.x if w.x == 0.0 else w.x, 0.0, lp.z if w.z == 0.0 else w.z)
+	var dir := 1.0 if rng.randf() < 0.5 else -1.0
+	WorldState.log_event("ambient", "outside_steps", {"intensity": 0})
+	for i in 8:
+		var at: Vector3 = base + along * dir * (-3.0 + i * 0.8)
+		AudioManager.play_3d("step_grass_%d" % rng.randi_range(0, 3), house.to_global(at + Vector3(0, 0.1, 0)), 3.0, rng.randf_range(0.85, 0.95), -1.0, -1.0, "Outdoor")
+		await get_tree().create_timer(0.62, false).timeout
+
+
+## A gust; somewhere in the house a door shifts in its frame.
+func _do_wind_door() -> void:
+	var ids := ["door_b2", "door_closet", "door_laundry", "door_bath", "door_b1"]
+	var d := WorldState.get_obj(ids[rng.randi() % ids.size()]) as Door
+	if d == null or WorldState.is_locked(d.obj_id):
+		return
+	var house = WorldState.get_obj("house")
+	AudioManager.play_3d("wind_gust", house.global_position + Vector3(rng.randf_range(-6, 18), 3.0, rng.randf_range(-3, 12)), 2.0)
+	var c := d.global_transform * Vector3(d.width / 2.0, 1.1, 0)
+	AudioManager.play_3d("door_rattle", c, -6.0, rng.randf_range(0.9, 1.1))
+	if d.is_open and rng.randf() < 0.4:
+		d.drift(d.open_angle - rng.randf_range(10.0, 25.0))
+	WorldState.log_event("ambient", "wind_door", {"door": d.obj_id, "intensity": 0})
+
+
+## The old television ticks and pops as it cools, or its static swells.
+func _do_tv_crackle() -> void:
+	var tv := WorldState.get_obj("tv") as TV
+	if tv == null:
+		return
+	AudioManager.play_3d("tick" if not tv.power else "elec_buzz", tv.global_position + Vector3(0, 0.3, 0), -4.0, rng.randf_range(0.7, 1.1))
+	WorldState.log_event("ambient", "tv_crackle", {"intensity": 0})

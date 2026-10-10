@@ -48,6 +48,7 @@ func build(params: Dictionary) -> void:
 		_add_window(Vector3(gx + garage_side * (gw / 2.0 + 0.0), 1.6, -3.6), 90.0 * garage_side, Vector2(0.8, 0.7), rng.randf() < 0.1)
 	# front door + porch light
 	var door_x: float = params.get("door_x", -1.5)
+	set_meta("door_x", door_x)
 	var door_col: Color = params.get("door_col", Color(0.35, 0.12, 0.1))
 	B.box(self, Vector3(1.0, 2.1, 0.06), Vector3(door_x, 1.35, 0.01), Mats.color(door_col, 0.5))
 	B.box(self, Vector3(1.16, 2.2, 0.04), Vector3(door_x, 1.4, 0.0), trim)

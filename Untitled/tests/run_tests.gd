@@ -150,7 +150,7 @@ func _run() -> void:
 	p.global_position = Vector3(0, 0.2, 60)
 	await frames(5)
 	var dir = WS.get_obj("director")
-	ok(dir.next_at >= 120.0 and dir.next_at <= 180.0, "first event scheduled at 2-3 min (%.0fs)" % dir.next_at)
+	ok(dir.next_at >= 90.0 and dir.next_at <= 150.0, "first event scheduled at 1.5-2.5 min (%.0fs)" % dir.next_at)
 	var orders = dir.simulate_orders(3)
 	ok(orders[0] != orders[1] or orders[1] != orders[2], "simulated orders differ between runs")
 	Engine.time_scale = 6.0
@@ -164,6 +164,8 @@ func _run() -> void:
 		if phone.ringing and randf() < 0.3:
 			p.global_position = phone.global_position + Vector3(0.6, -0.7, 0)
 			phone.interact(p)
+		elif phone.in_call and not phone.ringing and randf() < 0.15:
+			phone.hang_up()
 	print("  order: ", " > ".join(dir.order), "   (%.0f s of test time)" % waited)
 	var fired_main := mains.filter(func(e): return dir.fired.has(e.id)).size()
 	ok(fired_main == mains.size(), "all %d main events fired (%d)" % [mains.size(), fired_main])

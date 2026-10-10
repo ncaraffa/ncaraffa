@@ -577,6 +577,13 @@ func _hall_bath_laundry() -> void:
 	Props.boxes(R, Vector3(6.0, 0, 5.95), 2, 21)
 	B.cyl(R, 0.12, 0.12, 0.35, Vector3(6.2, 0.175, 7.9), Mats.color(Color(0.5, 0.15, 0.12), 0.5), false, Vector3.ZERO, 12)
 	B.cyl(R, 0.015, 0.015, 1.0, Vector3(6.2, 0.75, 7.9), Mats.m("metal"), false, Vector3(0, 0, 8), 6)
+	# on the closet floor, at the back, under the coats: an old tape
+	var tape := VHSTape.new()
+	tape.name = "VHSTape"
+	R.add_child(tape)
+	tape.position = Vector3(7.18, 0.0, 6.35)
+	tape.rotation_degrees.y = 28.0
+	tape.build()
 
 
 func _foyer() -> void:
@@ -613,6 +620,11 @@ func _living() -> void:
 	vcr.position = Vector3(-0.08, 0.17, 0.232)
 	vcr.blink_noon = true
 	vcr.setup_digital("clock_vcr", Color(0.3, 1.0, 0.6), 0.0008)
+	var deck := VCR.new()
+	deck.name = "VCRDeck"
+	stand.add_child(deck)
+	deck.position = Vector3(-0.2, 0.17, 0.08)
+	deck.setup("vcr", tv)
 	Props.sofa(R, Vector3(11.9, 0, 8.6), 90, 2.1, "fabric_sofa")
 	Props.coffee_table(R, Vector3(13.4, 0, 8.6), 90)
 	Props.armchair(R, Vector3(14.3, 0, 10.35), 200, "fabric_green")
