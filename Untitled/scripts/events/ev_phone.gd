@@ -22,7 +22,10 @@ func can_start() -> bool:
 func _start() -> void:
 	phone = WorldState.get_obj("phone") as Phone
 	answered = false
-	call_type = pick_weighted({"silence": 0.3, "time": 0.25, "wrong": 0.25, "distant": 0.2})
+	var opts := {"silence": 0.3, "time": 0.25, "wrong": 0.25, "distant": 0.2}
+	if night() >= 3:
+		opts["chant"] = 0.45
+	call_type = pick_weighted(opts)
 	phone.missed.connect(_on_missed, CONNECT_ONE_SHOT)
 	phone.ring(4, _on_answer)
 
@@ -52,6 +55,12 @@ func _on_answer(_p: Phone) -> void:
 			phone.play_line("voice_time", [[0.1, "Hi."], [2.6, "Sorry. What time do you have?"], [9.2, "...Okay."], [10.9, "Thank you."]], true, 0.6)
 		"wrong":
 			phone.play_line("voice_wrong", [[0.05, "Hey. Is Dana there?"], [4.8, "...Oh."], [6.3, "Sorry. I think I have the wrong number."]], true, 0.5)
+		"chant":
+			# voices singing, low, somewhere far away on the other end
+			phone.play_extra("chant_far", 0.0)
+			await wait(rng.randf_range(12.0, 18.0))
+			if phone.in_call:
+				phone.play_line("phone_hangup", [], true)
 		"distant":
 			# an open line somewhere outside: crickets, wind. A dog barks on the
 			# line — and a dog barks in the neighbourhood at the same moment.

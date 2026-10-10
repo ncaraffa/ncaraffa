@@ -132,6 +132,10 @@ func _run() -> void:
 		var can: bool = tm.essentials_done()
 		nm.sleep()
 		await secs(9.0)
+		if nm.interrupted:
+			# night 3 is broken by the 3 am awakening: go back to bed
+			nm.request_sleep()
+			await secs(9.0)
 		ok(can and int(WS.get_state("night")) == n, "reaches night %d (%d tasks, strange: %s)" % [n, tm.tasks.size(), str(tm.tasks.filter(func(t): return t.strange).map(func(t): return t.text))])
 	ok(int(WS.get_state("cult/stage")) >= 5, "cult traces advanced to stage %d" % int(WS.get_state("cult/stage")))
 	ok(sd.quota() >= 2, "scares allowed on later nights (quota %d)" % sd.quota())

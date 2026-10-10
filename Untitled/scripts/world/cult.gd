@@ -72,9 +72,40 @@ func setup_initial() -> void:
 	stage = 1
 
 
+func _candle(parent: Node3D, p: Vector3, h := 0.12, lit := true, light := false) -> void:
+	B.cyl(parent, 0.022, 0.024, h, p + Vector3(0, h / 2.0, 0), Mats.color(Color(0.12, 0.09, 0.08), 0.7), false, Vector3.ZERO, 8)
+	if lit:
+		B.sphere(parent, 0.012, p + Vector3(0, h + 0.016, 0), Mats.emissive(Color(1.0, 0.65, 0.28), 6.0, true), Vector3(1, 1.9, 1))
+	if light:
+		_candle_lights.append(B.omni(parent, p + Vector3(0, h + 0.15, 0), Color(1.0, 0.58, 0.28), 0.9, 4.0, true))
+
+
+const CIRCLE_TXT := "THE CIRCLE OF LARKSPUR COURT\n\n 6  LELAND      present\n 9  WHITCOMB    present\n12  PRUITT      present\n16  OCAMPO      present\n 3  HAINES      present\n 5  BAPTISTE    present\n 7  KOWALSKI    present\n11  FERRARO     present\n14  HALLOWAY    ---- pending ----\n\nthe chair is kept.\nthe circle closes when fourteen answers."
+
+
 ## Called while the player sleeps, before night `n` begins.
 func advance(n: int) -> void:
 	var h := _house()
+	if n >= 2 and stage < 2:
+		# the unused front room: someone has made a small altar in the corner
+		var alt := B.node(h, "Altar", Vector3(3.55, 0, 7.15))
+		B.box(alt, Vector3(0.9, 0.42, 0.45), Vector3(0, 0.21, 0), Mats.color(Color(0.05, 0.04, 0.04), 0.9), true)
+		B.box(alt, Vector3(0.96, 0.02, 0.5), Vector3(0, 0.425, 0), Mats.color(Color(0.18, 0.03, 0.03), 0.9))
+		for x: float in [-0.32, 0.0, 0.32]:
+			_candle(alt, Vector3(x, 0.435, -0.1), 0.14 + absf(x) * 0.1, true, x == 0.0)
+		B.cyl(alt, 0.08, 0.06, 0.05, Vector3(0, 0.46, 0.1), Mats.color(Color(0.3, 0.28, 0.25), 0.4), false, Vector3.ZERO, 14)
+		B.cyl(alt, 0.065, 0.065, 0.005, Vector3(0, 0.483, 0.1), Mats.color(Color(0.15, 0.02, 0.02), 0.2), false, Vector3.ZERO, 14)
+		_decal("sigil", Vector3(4.13, 1.25, 7.15), Vector3(0, -90, 0), 0.55, 0.85)
+		_decal("sigil_chalk", Vector3(3.55, 0.004, 7.15), Vector3(-90, 0, 0), 1.6, 0.35)
+		stage = 2
+	if n >= 3 and stage < 3:
+		# an inverted cross above the altar, and the computer has a new file
+		var cr := B.node(h, "InvertedCross", Vector3(4.12, 1.55, 6.55), Vector3(0, -90, 0))
+		B.box(cr, Vector3(0.05, 0.5, 0.03), Vector3(0, 0, 0), Mats.m("wood_dark"))
+		B.box(cr, Vector3(0.28, 0.05, 0.03), Vector3(0, -0.11, 0), Mats.m("wood_dark"))
+		var comp = WorldState.get_obj("computer")
+		if comp:
+			comp.terminal.files["CIRCLE.TXT"] = CIRCLE_TXT
 	if n >= 3 and stage < 3:
 		# chalk on the outside of the back door and on the patio
 		var d := WorldState.get_obj("door_back") as Door
@@ -103,8 +134,28 @@ func advance(n: int) -> void:
 		var l := B.omni(h, Vector3(18.0, 0.95, 2.5), Color(1.0, 0.62, 0.3), 0.9, 4.0, true)
 		_candle_lights.append(l)
 		stage = 4
+	if n >= 4 and not WorldState.get_state("cult/porch_candles", false):
+		# candles burning on the front steps of no. 6 and no. 9
+		WorldState.set_state("cult/porch_candles", true)
+		for pair in [["neighbor_leland", -2.0], ["neighbor_whitcomb", 1.6]]:
+			var nh := WorldState.get_obj(pair[0]) as Node3D
+			if nh:
+				for i in 3:
+					var lp := Vector3(float(pair[1]) - 0.3 + i * 0.3, 0.16, 1.2)
+					_candle(nh, lp, 0.13, true, i == 1)
 	if n >= 5 and stage < 5:
 		_decal("sigil", Vector3(3.24, 1.1, 1.799), Vector3(0, -90, 0), 0.08, 0.6)   # inside of the wardrobe door
+		# a ring of candles on the island in the middle of the court, chalk on the asphalt
+		var nb := WorldState.get_obj("neighborhood") as Node3D
+		if nb:
+			for i in 9:
+				var a := TAU * i / 9.0
+				_candle(nb, Vector3(sin(a) * 2.4, 0.15, cos(a) * 2.4), 0.14, true, i % 3 == 0)
+			var m := StandardMaterial3D.new()
+			m.albedo_texture = Mats.tex("sigil_chalk")
+			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			m.albedo_color = Color(1, 1, 1, 0.7)
+			B.quad(nb, Vector2(3.0, 3.0), Vector3(0, 0.032, -8.5), m, Vector3(-90, 0, 0))
 		stage = 5
 	WorldState.set_state("cult/stage", stage)
 

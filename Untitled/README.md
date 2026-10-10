@@ -30,6 +30,9 @@ Configurações (menu e pausa): volume geral, **ambiente**, **efeitos**, **susto
 
 - Você acorda no quarto. A **lista de tarefas** está no criado-mudo (E para pegar, Tab para ler depois).
 - As tarefas são feitas com interações reais: tirar o saco da lixeira da cozinha e levá-lo à lixeira de rua junto à garagem; lavar 3 pratos **com a torneira aberta**; abrir a caixa de correio na calçada; fechar as janelas de guilhotina (cozinha, sala, quarto da frente); apagar o fogo do fogão; girar o trinco das portas da frente/fundos (só pelo lado de dentro); apagar as luzes do térreo; levar as canecas para a pia; fechar a garagem. A lista risca o que foi feito.
+- **Toda tarefa que está na lista da noite começa por fazer**, mesmo que você a tenha feito na noite anterior: as janelas reabrem, o fogão volta aceso (a janelinha do forno fica laranja), as trancas destrancam, as luzes do térreo voltam acesas, a garagem reabre, as canecas se espalham.
+- Janelas: a cortina não bloqueia mais a janela (pegue a cortina pelas laterais). Canecas: com uma caneca na mão, olhe para a pia — "Put in the sink". Garagem: botão na parede ao lado da porta da cozinha, ou E no vão do portão.
+- **Noite 3, 3:12 da manhã**: ao dormir na noite 3 você é acordado por uma porta estourando; há uma figura do lado de fora da janela do quarto. Chegue perto (ou encare por alguns segundos) e ela some. Volte para a cama para continuar.
 - Com as tarefas essenciais feitas, **deitar na cama** (E) encerra a noite: a tela escurece, o som some, aparece "Night N", e você acorda na noite seguinte. Ninguém obriga a dormir; dá para continuar explorando.
 - O mundo **não é reiniciado**: cadeira deslocada continua deslocada, foto torta continua torta, portas ficam como estavam, objetos ficam onde caíram. Durante o sono a lixeira enche, a louça acumula, chega correspondência, e 1–2 coisas mudam (uma porta aberta, uma foto torta, a cadeira, a luz do corredor acesa...).
 - Instruções estranhas aparecem na lista em algumas noites (às vezes em outra letra, às vezes adicionadas no meio da noite): "Check the kitchen window", "Don't leave the back door open", "Turn off the hallway light", "Don't look at house number 6", "don't answer the phone"… Algumas têm consequência (talvez, e às vezes muito depois); outras não têm nenhuma.
@@ -37,7 +40,7 @@ Configurações (menu e pausa): volume geral, **ambiente**, **efeitos**, **susto
 ### Progressão
 | Noite | Clima | O que se torna possível |
 |---|---|---|
-| 1 | normalidade | só os eventos originais e a vida do bairro |
+| 1 | normalidade | eventos originais, vida do bairro, portas que se abrem rangendo, luz que falha no cômodo onde você está |
 | 2 | desconfiança | figuras distantes (rua, janelas vizinhas), cânticos na casa nº 6, objetos caindo |
 | 3 | medo | primeiros sustos intensos (até 1), figura na cerca do quintal e no fim do corredor, batidas fortes, luzes que se apagam; símbolo de giz aparece na porta dos fundos |
 | 4 | paranoia | até 2 sustos, figura cruzando portas, sussurros; a foto do corredor muda; velas acesas na garagem; linha nova na lista |
@@ -97,6 +100,7 @@ Todos os arquivos são normalizados (−1 dBFS de pico). Os níveis ficam numa *
 Novos sons sintetizados: impactos de susto (3), grito curto, estouro da TV, respiração próxima, sussurro, batida na janela, pancadas na porta, cântico distante, drone grave, corrida, zumbido elétrico, batimento, trinco, maçaneta, louça, esfregar, saco plástico, tampa de lixeira, caixa de correio, janela correndo, botão do fogão, gás, objetos caindo.
 
 ### O culto (sem explicação)
+Mais presente a cada noite: **noite 2** um altar no quarto vazio (velas acesas, tigela, o símbolo na parede, círculo de giz no chão); **noite 3** cruz invertida acima do altar, arquivo `CIRCLE.TXT` no computador ("14 HALLOWAY — pending"), cânticos também pelo telefone; **noite 4** velas acesas nos degraus das casas 6 e 9; **noite 5** círculo de velas na ilha da rotatória e o símbolo em giz no asfalto; cânticos na casa 6 até 3 vezes por noite.
 Desde o início: um símbolo riscado dentro do closet, a foto da Associação em 1974 na parede da garagem (o verso lista sobrenomes do bairro), um livro de história local na estante (as últimas páginas foram cortadas), tocos de vela no canto do pátio. Correspondência a cada noite (conta de luz; carta da Associação "guardamos sua cadeira"; bilhete "não diga em voz alta, soletre — eles só ouvem palavras"; recorte sobre o incêndio de 1979 na casa nº 6; envelope vazio com o símbolo). Durante o sono: giz na porta dos fundos (noite 3), alguém a mais na foto do corredor e velas acesas na garagem (noite 4), o símbolo dentro do guarda-roupa (noite 5). Cânticos e janelas à luz de vela na casa nº 6 (Leland). A ligação entre isso, as figuras e os eventos originais **não é confirmada em lugar nenhum**.
 
 ### Os 10 eventos originais
@@ -124,6 +128,7 @@ godot --headless --path . -s tests/run_tests.gd    # 62: mundo, jogador, intera�
 godot --headless --path . -s tests/door_test.gd    # portas externas nos dois sentidos + trinco
 godot --headless --path . -s tests/horror_test.gd  # 66: buses, tarefas reais, sono até a noite 6, figuras, 5 sustos (forçados e por gatilho real), aparições
 godot --headless --path . -s tests/menu_test.gd    # menu → PLAY → mundo → sair → jogar de novo
+godot --headless --path . -s tests/tasks_test.gd   # noites 1–9 fazendo TODAS as tarefas pela mira + E (inclui janelas, fogão, trancas, garagem, canecas, despertar das 3h)
 godot --headless --path . -s tests/soak_test.gd    # noite 5, relógios acelerados, jogador vagando por minutos
 godot --path . -s tests/screenshots.gd -- pasta    # capturas (precisa de GPU/Xvfb)
 ```

@@ -40,11 +40,31 @@ func _refresh() -> void:
 		pl.material_override = Mats.color(Color(0.72, 0.66, 0.55), 0.6) if in_sink else Mats.m("porcelain")
 
 
+func accepts(item) -> bool:
+	return item is Pickup and String(item.obj_id).begins_with("mug")
+
+
 func get_prompt() -> String:
+	var p = WorldState.player
+	if p and accepts(p.held):
+		return "Put in the sink"
 	return "Wash a dish" if dirty() > 0 else ""
 
 
-func interact(_player: Node) -> void:
+var _mug_slot := 0
+
+
+func interact(player: Node) -> void:
+	if accepts(player.held):
+		var mug: Pickup = player.held
+		player.drop()
+		mug.global_position = global_transform * Vector3(-0.17 + (_mug_slot % 3) * 0.17, 0.14, -0.06)
+		mug.linear_velocity = Vector3.ZERO
+		mug.angular_velocity = Vector3.ZERO
+		_mug_slot += 1
+		AudioManager.play_3d("dish_%d" % (randi() % 3), global_position, -2.0)
+		WorldState.set_state("task/last_action_time", WorldState.sim_time)
+		return
 	if dirty() <= 0:
 		return
 	var f = WorldState.get_obj(faucet_id)

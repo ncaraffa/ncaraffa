@@ -95,7 +95,7 @@ func _process(delta: float) -> void:
 		"concrete": prefix = "step_concrete"
 		"tile": prefix = "step_tile"
 	emitter.stream = AudioManager.variant(prefix, 4)
-	emitter.volume_db = AudioManager.db("step_heavy") + (2.0 if steps_left > 3 else 2.0 - (4 - steps_left) * 4.0)
+	emitter.volume_db = AudioManager.db("step_heavy") + (6.0 if steps_left > 3 else 6.0 - (4 - steps_left) * 4.0)
 	emitter.pitch_scale = rng.randf_range(0.9, 1.02)
 	emitter.play()
 	# a slightly irregular gait

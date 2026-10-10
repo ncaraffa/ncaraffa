@@ -25,6 +25,9 @@ func _run() -> void:
 		await create_timer(1.0).timeout
 		nm.sleep()
 		await create_timer(9.0).timeout
+		if nm.interrupted:
+			nm.request_sleep()
+			await create_timer(9.0).timeout
 	print("night ", WS.get_state("night"))
 	Engine.time_scale = 4.0
 	dir.time_scale = 12.0

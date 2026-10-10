@@ -26,6 +26,8 @@ func setup(id: String, width: float, height: float, mat: Material) -> void:
 	for i in 4:
 		B.box(body, Vector3(width, 0.02, 0.06), Vector3(0, -height * (i + 1) / 5.0, 0), Mats.color(Color(0.7, 0.7, 0.68), 0.6))
 	B.box(body, Vector3(0.3, 0.04, 0.05), Vector3(0, -height + 0.2, 0.05), Mats.m("metal_dark"))
+	# the opening itself can be used to pull it down again when it is up
+	B.interact_area(self, Vector3(width - 0.2, height - 0.3, 0.15), Vector3(0, height / 2.0, -0.1))
 	WorldState.set_state("door/" + id, false)
 
 
@@ -49,3 +51,29 @@ func interact(_player: Node) -> void:
 	_busy = false
 	WorldState.set_state("door/" + obj_id, is_open)
 	WorldState.log_interaction("garage_door", obj_id)
+
+
+## Instant state change (used when a new night begins).
+func set_open_instant(v: bool) -> void:
+	is_open = v
+	pivot.rotation_degrees.x = -88.0 if v else 0.0
+	WorldState.set_state("door/" + obj_id, is_open)
+
+
+class OpenerButton extends Interactable:
+	## Wall button by the kitchen door: opens/closes the garage door.
+	var door: GarageDoor
+
+	func setup_button(target: GarageDoor) -> void:
+		door = target
+		B.box(self, Vector3(0.08, 0.12, 0.02), Vector3(0, 0, 0.01), Mats.m("plastic_white"))
+		B.box(self, Vector3(0.035, 0.035, 0.015), Vector3(0, 0.015, 0.025), Mats.emissive(Color(0.9, 0.5, 0.2), 1.5))
+		B.interact_area(self, Vector3(0.16, 0.2, 0.1), Vector3(0, 0, 0.04))
+
+	func get_prompt() -> String:
+		var p := door.get_prompt()
+		return "" if p == "" else p + " the garage"
+
+	func interact(player: Node) -> void:
+		AudioManager.play_3d("switch_click", global_position)
+		door.interact(player)

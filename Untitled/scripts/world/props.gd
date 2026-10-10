@@ -391,10 +391,13 @@ static func sink_basin(parent: Node, pos: Vector3, rot_y: float, w := 0.7) -> No
 
 
 static func stove(parent: Node, pos: Vector3, rot_y: float) -> Node3D:
+	## The oven window glows orange while the stove is on (see StoveKnob).
 	var r := root(parent, "Stove", pos, rot_y)
 	var body := Mats.color(Color(0.86, 0.84, 0.78), 0.35)
 	B.box(r, Vector3(0.76, 0.9, 0.62), Vector3(0, 0.45, 0), body, true)
-	B.box(r, Vector3(0.6, 0.38, 0.02), Vector3(0, 0.38, 0.31), Mats.color(Color(0.08, 0.08, 0.08), 0.15))
+	var ov := B.box(r, Vector3(0.6, 0.38, 0.02), Vector3(0, 0.38, 0.31), Mats.color(Color(0.08, 0.08, 0.08), 0.15))
+	ov.name = "OvenWindow"
+	r.set_meta("oven_window", ov)
 	B.box(r, Vector3(0.5, 0.02, 0.03), Vector3(0, 0.62, 0.33), Mats.m("chrome"))
 	B.box(r, Vector3(0.76, 0.2, 0.06), Vector3(0, 1.0, -0.28), body)
 	for x: float in [-0.18, 0.18]:

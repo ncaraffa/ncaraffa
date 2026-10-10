@@ -38,13 +38,15 @@ const EVENT_SCRIPTS := [
 	"res://scripts/events/ev_lights_out.gd",
 	"res://scripts/events/ev_bang.gd",
 	"res://scripts/events/ev_whisper.gd",
+	"res://scripts/events/ev_door_creak.gd",
+	"res://scripts/events/ev_flicker.gd",
 ]
 
 const FIRST_DELAY := Vector2(120.0, 180.0)
 const INTERVAL := Vector2(240.0, 360.0)
 const AFTER_INTERVAL := Vector2(300.0, 600.0)
 ## side-track spacing per night (index = night, last value reused)
-const SIDE_INTERVAL := [Vector2(0, 0), Vector2(9999, 9999), Vector2(200, 360), Vector2(170, 300), Vector2(140, 260), Vector2(120, 220)]
+const SIDE_INTERVAL := [Vector2(0, 0), Vector2(200, 340), Vector2(150, 260), Vector2(120, 220), Vector2(100, 190), Vector2(90, 170)]
 const RETRY := 20.0
 
 var events: Array = []
@@ -106,6 +108,8 @@ func _process(delta: float) -> void:
 				t.fn.call()
 	var p = WorldState.player
 	if p and p.get("sleeping") == true:
+		return
+	if WorldState.get_state("night/interrupted", false):
 		return
 	if clock >= next_at:
 		_fire_main()

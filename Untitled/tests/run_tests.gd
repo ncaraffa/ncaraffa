@@ -172,7 +172,11 @@ func _run() -> void:
 	for e in WS.event_log:
 		if e.variant in ["returned", "spelled"] or e.id == "press_enter" and e.variant != "shown":
 			continue
-	ok(WS.event_log.size() >= 10, "events logged (%d entries)" % WS.event_log.size())
+	# the phone only logs once it was answered or stopped ringing
+	var logged_ids := {}
+	for e in WS.event_log:
+		logged_ids[e.id] = true
+	ok(logged_ids.size() >= 9, "events logged (%d distinct)" % logged_ids.size())
 	# let running events finish (normal speed: no new events in the meantime)
 	dir.time_scale = 1.0
 	await seconds(60.0)

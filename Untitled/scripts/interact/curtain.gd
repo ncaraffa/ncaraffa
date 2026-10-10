@@ -21,7 +21,10 @@ func setup(id: String, w: float, h: float, mat: Material, start_open := true) ->
 		for i in folds:
 			var fw := (w / 2.0 + 0.1) / folds
 			B.box(panel, Vector3(fw * 1.08, h - 0.02, 0.025), Vector3(dir * (fw * i + fw / 2), h / 2, (0.012 if i % 2 == 0 else -0.012)), mat)
-	B.interact_area(self, Vector3(w + 0.3, h, 0.15), Vector3(0, h / 2, 0))
+	# grab the curtains by their sides: the middle of the window stays free so
+	# the window itself (sash) can be reached through an open curtain
+	for side: float in [-1.0, 1.0]:
+		B.interact_area(self, Vector3(0.32, h, 0.12), Vector3(side * (w / 2.0 + 0.02), h / 2, 0))
 	set_open(start_open, true)
 
 

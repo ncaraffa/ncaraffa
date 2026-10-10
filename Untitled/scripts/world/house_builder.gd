@@ -667,7 +667,7 @@ func _kitchen() -> void:
 	fk.setup("faucet_kitchen", 0.3)
 	Props.counter(R, Vector3(14.825, 0, 0.41), 0, 1.15, top)
 	Props.counter(R, Vector3(15.59, 0, 1.055), -90, 0.69, top)
-	Props.stove(R, Vector3(15.57, 0, 1.78), -90)
+	var stove := Props.stove(R, Vector3(15.57, 0, 1.78), -90)
 	Props.counter(R, Vector3(15.59, 0, 2.83), -90, 1.34, top)
 	Props.upper_cabinet(R, Vector3(15.06, 1.45, 0.29), 0, 1.64)
 	Props.upper_cabinet(R, Vector3(15.71, 1.45, 2.1), -90, 2.6)
@@ -749,7 +749,7 @@ func _kitchen() -> void:
 	R.add_child(knob)
 	knob.position = Vector3(15.25, 0.84, 1.53)
 	knob.rotation_degrees.y = -90
-	knob.setup("stove_knob", Vector3(-0.15, 0.075, 0.31))
+	knob.setup("stove_knob", Vector3(-0.15, 0.075, 0.31), stove.get_meta("oven_window"))
 
 
 func _garage() -> void:
@@ -777,6 +777,12 @@ func _garage() -> void:
 	R.add_child(gd)
 	gd.position = Vector3(19.25, -0.3, 11.0)
 	gd.setup("garage_door", 5.3, 2.4, Mats.m("siding_white"))
+	var btn := GarageDoor.OpenerButton.new()
+	btn.name = "GarageButton"
+	R.add_child(btn)
+	btn.position = Vector3(16.115, 1.3, 3.55)
+	btn.rotation_degrees.y = 90
+	btn.setup_button(gd)
 
 
 const FRIDGE_LETTER := "Dana -\n\nSaw Dad on Sunday. He's the same.\nStill spells everything out loud instead of\njust saying it. Asked the nurse for W-A-T-E-R.\nTold the TV to O-F-F.\n\nYou remember how he'd stand at the microwave\nand spell S-T-A-R-T at it, like machines only\nlisten if you spell it out for them.\n\nHe asked if you still have the old computer.\nI told him I didn't know.\n\nCall me. The phone at your place never picks up.\n\n- Ruth"

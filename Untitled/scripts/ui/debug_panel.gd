@@ -121,6 +121,7 @@ func _build_tabs(tabs: TabContainer) -> void:
 	_btn(nr, "complete chores", func(): WorldState.get_obj("tasks").debug_complete())
 	_btn(nr, "sleep now (next night)", func(): WorldState.get_obj("night_manager").sleep())
 	_btn(nr, "add late list line", func(): WorldState.get_obj("tasks")._add_late_line())
+	_btn(nr, "3 am awakening now", func(): WorldState.get_obj("night_manager")._night_waking())
 	# ---------------- audio
 	var au := _tab(tabs, "Audio")
 	var ar := _row(au, "sound:")
