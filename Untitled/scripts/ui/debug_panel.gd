@@ -202,6 +202,9 @@ func _btn(p: Node, t: String, fn: Callable) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# released builds: no debug panel unless started with `-- --debug`
+	if not OS.is_debug_build() and not OS.get_cmdline_user_args().has("--debug"):
+		return
 	if event.is_action_pressed("debug_panel"):
 		root.visible = not root.visible
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if root.visible else Input.MOUSE_MODE_CAPTURED
