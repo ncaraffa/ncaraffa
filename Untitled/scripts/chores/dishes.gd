@@ -48,10 +48,13 @@ func get_prompt() -> String:
 	var p = WorldState.player
 	if p and accepts(p.held):
 		return "Put in the sink"
+	if _washing:
+		return ""
 	return "Wash a dish" if dirty() > 0 else ""
 
 
 var _mug_slot := 0
+var _washing := false
 
 
 func interact(player: Node) -> void:
@@ -74,9 +77,16 @@ func interact(player: Node) -> void:
 		if hud:
 			hud.thought("The water's off.")
 		return
+	if _washing:
+		return
+	_washing = true
 	AudioManager.play_3d("scrub", global_position)
 	WorldState.set_state("task/last_action_time", WorldState.sim_time)
 	await get_tree().create_timer(1.1, false).timeout
+	_washing = false
+	# the water was turned off halfway: that dish is still dirty
+	if not f.running:
+		return
 	AudioManager.play_3d("dish_%d" % (randi() % 3), global_position)
 	WorldState.set_state("dishes/dirty", max(0, dirty() - 1))
 	WorldState.log_interaction("wash", obj_id)

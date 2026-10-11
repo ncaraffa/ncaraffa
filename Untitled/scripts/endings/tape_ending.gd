@@ -14,8 +14,9 @@ extends Node
 ## Sequence: empty room (25-35 s) -> an ordinary person crosses, goes to the
 ## kitchen, switches off the living-room light on the way back, leaves ->
 ## silence -> a black figure in the hallway, still -> its head turns, slowly,
-## to the camera -> it stares -> it RUNS at the camera -> blackout, silence,
-## "Untitled..." -> menu.
+## to the camera -> it stares -> it walks into the bedroom the person went into
+## -> a scream, cut short -> silence -> it comes out of the room RUNNING, at the
+## camera -> blackout, silence, "Untitled..." -> menu.
 
 signal phase_changed(phase: String)
 
@@ -24,6 +25,10 @@ const CAM_POS := Vector3(5.8, 1.55, 10.72)
 const CAM_AIM := Vector3(6.5, 1.0, 4.4)
 const FIGURE_AT := Vector3(4.82, 0.0, 5.45)
 const RUN_TO := Vector3(5.79, 0.0, 10.5)
+## into the bedroom, where the person went to sleep
+const FIGURE_IN := [Vector3(4.86, 0, 4.75), Vector3(4.45, 0, 4.25), Vector3(3.5, 0, 4.05), Vector3(2.7, 0, 3.8)]
+## and out again, out of the doorway and down the hall
+const FIGURE_OUT := [Vector3(3.3, 0, 4.0), Vector3(4.4, 0, 4.3), Vector3(4.85, 0, 4.85), Vector3(4.95, 0, 5.6)]
 const PERSON_PATH_IN := [Vector3(4.5, 0, 4.25), Vector3(4.9, 0, 4.7), Vector3(4.9, 0, 7.5), Vector3(5.5, 0, 8.8),
 	Vector3(7.0, 0, 9.35), Vector3(8.6, 0, 8.9), Vector3(9.6, 0, 6.6), Vector3(9.8, 0, 5.4), Vector3(10.6, 0, 3.4),
 	Vector3(11.6, 0, 3.0), Vector3(12.6, 0, 3.2)]
@@ -151,7 +156,12 @@ func _run() -> void:
 	# 3 — THE SILHOUETTE
 	_set_phase("figure")
 	await _figure()
-	# 4 — IT RUNS
+	# 4 — IT GOES INTO THE BEDROOM
+	_set_phase("enters")
+	await _enter_room()
+	_set_phase("scream")
+	await _scream()
+	# 5 — IT RUNS
 	_set_phase("run")
 	await _run_at_camera()
 	await _end()
@@ -343,7 +353,7 @@ func _figure() -> void:
 	vhs_mat.set_shader_parameter("glitch", 0.0)
 	_clear_static()
 	# it stands. nothing.
-	await _wait(rng.randf_range(6.0, 8.0))
+	await _wait(rng.randf_range(4.5, 6.0))
 	# the head turns towards the camera — slowly, in uneven pieces
 	_set_phase("head_turn")
 	var yaw := -6.0
@@ -360,7 +370,45 @@ func _figure() -> void:
 	if hiss:
 		var tw := create_tween()
 		tw.tween_property(hiss, "volume_db", AudioManager.db("vhs_hiss") - 22.0, 1.5)
-	await _wait(rng.randf_range(4.5, 6.0))
+	await _wait(rng.randf_range(3.0, 4.0))
+
+
+## It looks away from the camera, as if it had never seen it, and walks into the
+## bedroom — the one the person went into. Not fast. It knows the way.
+func _enter_room() -> void:
+	fig.head_manual = false
+	fig.look_target = null
+	fig.stiff = true
+	await _wait(0.6)
+	await _walk(fig, FIGURE_IN, 0.85)
+	fig.vanish("instant")
+	# a door, softly; then nothing for a moment
+	AudioManager.play_flat("door_creak", -18.0, "Tape", 0.8)
+	await _wait(rng.randf_range(2.2, 3.0))
+
+
+## The scream: loud, raw, cut off. The lamp in there dies. Then the tape just
+## hisses, for a few seconds that are far too long.
+func _scream() -> void:
+	vhs_mat.set_shader_parameter("glitch", 0.35)
+	AudioManager.play_flat("scream", 0.0, "Tape")
+	if hiss:
+		hiss.volume_db = AudioManager.db("vhs_hiss")
+	var lamp = WorldState.get_obj("b1_lamp")
+	await _wait(0.25)
+	vhs_mat.set_shader_parameter("glitch", 0.0)
+	for k in 5:
+		if lamp:
+			lamp.set_on(k % 2 == 1, true, true)
+		await _wait(rng.randf_range(0.12, 0.3))
+	await _wait(1.0)
+	if lamp:
+		lamp.set_on(false, true, true)
+	vhs_mat.set_shader_parameter("glitch", 0.15)
+	await _wait(0.15)
+	vhs_mat.set_shader_parameter("glitch", 0.0)
+	_set_phase("aftermath")
+	await _wait(rng.randf_range(3.0, 4.0))
 
 
 func _clear_static() -> void:
@@ -371,6 +419,19 @@ func _clear_static() -> void:
 
 func _run_at_camera() -> void:
 	var h := _house()
+	# out of the bedroom doorway, already running
+	fig.appear(h.to_global(FIGURE_OUT[0]), h.global_basis * Vector3(1, 0, 0.2))
+	fig.stiff = false
+	fig.look_target = cam
+	fig._sprint = true
+	fig._lean = 0.55
+	fig.walk_path(_path(FIGURE_OUT), 8.5)
+	for k in 3:
+		_tape_step(fig.global_position, 6.0)
+		await _wait(0.1)
+	while fig._moving:
+		await get_tree().process_frame
+	fig._sprint = true
 	AudioManager.play_flat("tape_scare", 0.0, "Ending")
 	# it ends right against the lens, chest and head filling the picture
 	var fwd := -cam.global_basis.z

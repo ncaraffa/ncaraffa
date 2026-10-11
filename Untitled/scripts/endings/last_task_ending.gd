@@ -18,10 +18,16 @@ const STEPS_HALL := [Vector3(4.9, 0, 8.1), Vector3(4.9, 0, 7.35), Vector3(4.9, 0
 	Vector3(4.86, 0, 5.1), Vector3(4.8, 0, 4.45)]
 const STEPS_ROOM := [Vector3(3.75, 0, 4.15), Vector3(3.0, 0, 4.3), Vector3(2.3, 0, 4.45), Vector3(1.75, 0, 4.45)]
 const WHISPER := "You forgot to check the tape."
+const LAMP_AT := Vector3(0.35, 0.85, 2.5)        # the bedside lamp, behind your head
+const LOOK_SIDE := Vector3(1.75, 0.95, 4.55)     # where the mattress gave
+## how far its face is from yours, flash by flash (metres)
+const FLASHES := [1.05, 0.62, 0.34]
 
 var phase := ""
 var overlay: EndingOverlay
 var fig: ShadowFigure
+var eyes: WatchingEye
+var lamp_light: OmniLight3D
 var rng := RandomNumberGenerator.new()
 ## Tests may shorten the waits (1.0 = as designed).
 var pace := 1.0
@@ -118,19 +124,40 @@ func _run() -> void:
 	AudioManager.play_flat("whisper_tape", 0.0, "Ending")
 	if hud:
 		hud.show_subtitle(WHISPER, 3.6)
-	await _wait(3.3)
-	# it is there
-	_set_phase("scare")
+	await _wait(3.6)
 	if hud:
 		hud.clear_subtitle()
-	_scare(cam)
-	await _wait(0.6)
+	# silence. then the bedside lamp comes on, by itself (there is no power)
+	_set_phase("lamp")
+	await _wait(1.3)
+	var lamp = WorldState.get_obj("b1_lamp")
+	lamp_light = B.omni(self, Vector3.ZERO, Color(1.0, 0.82, 0.6), 0.0, 7.0, false, 1.0)
+	lamp_light.light_specular = 0.0
+	lamp_light.global_position = h.to_global(LAMP_AT)
+	_lamp(true, lamp)
+	AudioManager.play_3d("switch_click", h.to_global(LAMP_AT), -2.0)
+	# you turn your head to where it sat down. nobody there.
+	var look_to := Transform3D(Basis.IDENTITY, cam.global_position).looking_at(h.to_global(LOOK_SIDE), Vector3.UP)
+	var tl := create_tween()
+	tl.tween_property(cam, "global_transform", look_to, 1.5 * pace).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await _wait(2.9)
+	# the bulb buzzes. it dies.
+	AudioManager.play_3d("elec_buzz", h.to_global(LAMP_AT), -3.0)
+	for k in 4:
+		_lamp(k % 2 == 1, lamp)
+		await _wait(rng.randf_range(0.06, 0.16))
+	_lamp(false, lamp)
+	await _wait(1.25)
+	# it is there
+	_set_phase("scare")
+	await _scare(cam, lamp)
 	# BLACKOUT. Silence.
 	_set_phase("blackout")
 	overlay.blackout()
 	AudioManager.stop_all()
 	if fig:
 		fig.vanish("instant")
+	_lamp(false, WorldState.get_obj("b1_lamp"))
 	await _wait(3.2)
 	_set_phase("title")
 	await overlay.show_title(3.5)
@@ -141,43 +168,94 @@ func _run() -> void:
 	GameManager.finish_ending()
 
 
-func _scare(cam: Camera3D) -> void:
-	var envm = WorldState.get_obj("environment")
+func _lamp(on: bool, lamp) -> void:
+	if lamp:
+		lamp.set_on(on, true, true)
+	if lamp_light:
+		lamp_light.light_energy = 0.6 if on else 0.0
+
+
+## Its face, with its eyes open, a hand's width from yours. The lamp strobes;
+## every time it comes back the face is closer. A scream that is not human,
+## the view jerks, and then nothing.
+func _scare(cam: Camera3D, lamp) -> void:
 	fig = ShadowFigure.new()
 	fig.name = "LastFigure"
 	add_child(fig)
-	# bigger than a person
-	fig.scale = Vector3.ONE * 1.25
-	var fwd := -cam.global_basis.z
-	var flat := Vector3(fwd.x, 0, fwd.z).normalized()
-	# the head lands right in front of the eyes
-	var head_off := Vector3(0, 2.0 * 1.25, 0)
-	# (not closer than ~0.4 m: inside the head the camera would see nothing)
-	var start := cam.global_position + fwd * 1.5 - head_off
-	var end := cam.global_position + fwd * 0.42 - head_off
-	fig.appear(start, -flat)
-	fig.look_target = cam
-	fig.set_rim(3.2)
-	var light := B.omni(self, Vector3.ZERO, Color(0.72, 0.78, 1.0), 1.8, 2.6)
-	light.light_specular = 0.0
-	light.global_position = cam.global_position + Vector3(0, 0.35, 0) + fwd * 0.25
-	# the view punches in
+	fig.scale = Vector3.ONE * 1.2
+	fig.look_target = null
+	fig.head_manual = true
+	fig._lean = 0.65
+	fig._arm_raise = 0.6
+	# pale eyes, wide open, pupils like pinheads
+	eyes = WatchingEye.new()
+	fig.parts.head.add_child(eyes)
+	eyes.setup(0.026, true, 0.072)
+	eyes.position = Vector3(0, 0.135, 0.124)
+	# not quite level, not quite the same
+	eyes.quads[0].rotation_degrees.z = 14.0
+	eyes.quads[1].rotation_degrees.z = -6.0
+	eyes.quads[1].position.y -= 0.009
+	eyes.quads[1].scale = Vector3.ONE * 1.12
+	eyes.turn_speed = 0.0
+	eyes.blinks = false
+	eyes.dilate_base = 0.42
+	eyes.mat.set_shader_parameter("surround", 0.0)
+	eyes.mat.set_shader_parameter("glow", 0.8)
+	eyes.mat.set_shader_parameter("bloodshot", 1.0)
+	eyes.mat.set_shader_parameter("iris_pale", 1.0)
+	eyes._open = 1.0
+	eyes._open_target = 1.0
+	# and a mouth hanging open, much too far
+	var mq := QuadMesh.new()
+	mq.size = Vector2(0.075, 0.2)
+	var mouth := MeshInstance3D.new()
+	mouth.mesh = mq
+	var mm := ShaderMaterial.new()
+	mm.shader = load("res://shaders/mouth.gdshader")
+	mouth.material_override = mm
+	mouth.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	fig.parts.head.add_child(mouth)
+	mouth.position = Vector3(0.006, 0.0, 0.112)
+	mouth.rotation_degrees = Vector3(14.0, 0, 4.0)
+	fig.visible = false
 	var fov0 := cam.fov
-	var ft := create_tween()
-	ft.tween_property(cam, "fov", fov0 * 0.78, 0.09).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	if envm:
-		envm.fade_to(0.0, 0.03)
-	AudioManager.play_flat("final_scare", 0.0, "Ending")
-	fig.lunge(end, 0.1)
-	fig._lean = 0.05
-	fig._arm_raise = 0.55
-	fig.twitch()
-	# the view jolts
 	var base := cam.global_transform
-	for k in 6:
+	AudioManager.play_flat("final_scare", 0.0, "Ending")
+	for i in FLASHES.size():
+		var d: float = FLASHES[i]
+		# each time, the head at another wrong angle
+		fig.head_rot = Vector3(-20.0 - i * 6.0, rng.randf_range(-12, 12), (34.0 if i % 2 == 0 else -28.0) + rng.randf_range(-6, 6))
+		_place_face(cam, d)
+		if i == 0:
+			fig.appear(fig.global_position, Vector3.FORWARD)
+			_place_face(cam, d)
+		fig.visible = true
+		_lamp(true, lamp)
+		cam.fov = fov0 * (1.0 - 0.07 * (i + 1))
+		cam.global_transform = base.rotated_local(Vector3(1, 0, 0), rng.randf_range(-0.025, 0.025)).rotated_local(Vector3(0, 1, 0), rng.randf_range(-0.03, 0.03))
+		await get_tree().create_timer((0.11 if i < FLASHES.size() - 1 else 0.06) * pace, false).timeout
+		if i < FLASHES.size() - 1:
+			_lamp(false, lamp)
+			fig.visible = false
+			await get_tree().create_timer(0.055 * pace, false).timeout
+	# the last one stays: it shakes, the view shakes with it
+	for k in 10:
 		await get_tree().process_frame
-		cam.global_transform = base.rotated_local(Vector3(1, 0, 0), rng.randf_range(-0.03, 0.03)).rotated_local(Vector3(0, 1, 0), rng.randf_range(-0.03, 0.03))
-		fig.twitch()
+		fig.head_rot += Vector3(rng.randf_range(-7, 7), rng.randf_range(-10, 10), rng.randf_range(-9, 9))
+		_place_face(cam, FLASHES[-1] - k * 0.012)
+		cam.global_transform = base.rotated_local(Vector3(1, 0, 0), rng.randf_range(-0.045, 0.045)).rotated_local(Vector3(0, 1, 0), rng.randf_range(-0.045, 0.045))
+	await get_tree().create_timer(0.08 * pace, false).timeout
 	cam.global_transform = base
-	await get_tree().create_timer(0.5, false).timeout
 	cam.fov = fov0
+
+
+## Moves the whole figure so that its face is `d` metres in front of the camera,
+## looking straight into it.
+func _place_face(cam: Camera3D, d: float) -> void:
+	var fwd := -cam.global_basis.z
+	fig.face_point(cam.global_position)
+	fig._animate(0.0)
+	var face: Vector3 = eyes.global_position
+	var want := cam.global_position + fwd * d + cam.global_basis.y * 0.03
+	fig.global_position += want - face

@@ -30,6 +30,8 @@ var looked_at: Node = null       # current interactable under the crosshair
 var held: Pickup = null
 var focus_target: Node = null    # e.g. the computer
 var _focus_tween: Tween
+## The camera is still gliding back to the head after a focus: no walking yet.
+var _focus_returning := false
 var _cam_home := Transform3D()
 var controls_enabled := true
 var sleeping := false
@@ -83,7 +85,7 @@ func _hud() -> Node:
 
 func is_busy() -> bool:
 	var hud = _hud()
-	return sleeping or focus_target != null or (hud != null and hud.is_reading())
+	return sleeping or focus_target != null or _focus_returning or (hud != null and hud.is_reading())
 
 
 # ------------------------------------------------------------------ input
@@ -287,6 +289,8 @@ func _update_interaction() -> void:
 	var q := PhysicsRayQueryParameters3D.create(from, to, B.LAYER_WORLD | B.LAYER_INTERACT | B.LAYER_PROPS)
 	q.collide_with_areas = true
 	q.exclude = [get_rid()]
+	if held and not is_instance_valid(held):
+		held = null
 	if held:
 		q.exclude = [get_rid(), held.get_rid()]
 	var hit := space.intersect_ray(q)
@@ -353,6 +357,7 @@ func begin_focus(target: Node, cam_xform: Transform3D) -> void:
 	if held:
 		drop()
 	focus_target = target
+	_focus_returning = false
 	if _focus_tween and _focus_tween.is_valid():
 		_focus_tween.kill()
 	var start := camera.global_transform
@@ -371,10 +376,12 @@ func end_focus() -> void:
 	focus_target = null
 	if _focus_tween and _focus_tween.is_valid():
 		_focus_tween.kill()
+	_focus_returning = true
 	var dest := head.global_transform * _cam_home
 	_focus_tween = create_tween()
 	_focus_tween.tween_property(camera, "global_transform", dest, 0.5).set_trans(Tween.TRANS_SINE)
 	_focus_tween.tween_callback(func():
+		_focus_returning = false
 		camera.top_level = false
 		camera.transform = _cam_home)
 	var hud = _hud()

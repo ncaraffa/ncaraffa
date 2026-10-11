@@ -704,6 +704,42 @@ def whisper_tape():
     save("whisper_tape", np.concatenate([pre, v, np.zeros(int(0.3 * SR))]))
 
 
+def scream():
+    """Someone in the bedroom, screaming: a raw, rising, breaking human scream,
+    cut off mid-breath, and something heavy hitting the floor."""
+    r = np.random.default_rng(3303)
+    d = 2.35
+    n = int(d * SR)
+    tt = np.arange(n) / SR
+    # pitch: a gasp that tears up into the scream, wavering, then the voice cracks
+    f0 = np.interp(tt, [0, 0.07, 0.3, 0.9, 1.5, 1.72, 1.78, 2.05, d], [330, 420, 760, 820, 880, 900, 1180, 1050, 900])
+    jitter = lp(r.standard_normal(n), 30) * 40
+    vib = 1 + 0.035 * np.sin(2 * np.pi * 6.3 * tt + 2 * np.sin(2 * np.pi * 0.9 * tt))
+    f = (f0 + jitter) * vib
+    ph = np.cumsum(f) / SR
+    src = signal.sawtooth(2 * np.pi * ph, 0.97)
+    # vocal-fold chaos: period doubling and noise, more of it as it breaks
+    rough = np.interp(tt, [0, 0.3, 1.5, 1.75, d], [0.1, 0.35, 0.45, 0.9, 0.8])
+    src = src * (1 + rough * 0.6 * np.sin(2 * np.pi * ph * 0.5)) + hp(r.standard_normal(n), 900) * rough * 0.35
+    # vocal tract: a wide-open "aah"
+    v = (bp(src, 850, 1250) * 1.0 + bp(src, 1500, 2000) * 0.8 + bp(src, 2600, 3300) * 0.55
+         + bp(src, 3600, 4600) * 0.3 + lp(src, 500) * 0.2)
+    amp = np.interp(tt, [0, 0.06, 0.25, 1.6, 1.75, 2.0, 2.08, 2.1, d], [0, 0.35, 1.0, 0.95, 1.0, 1.0, 0.25, 0.0, 0.0])
+    v = np.tanh(v * amp * 3.5)
+    # the gasp before it
+    gasp = bp(r.standard_normal(n), 700, 3500) * np.exp(-((tt - 0.04) / 0.035) ** 2) * 0.5
+    # cut off: something heavy hits the floor, wood rattles
+    i0 = int(2.09 * SR)
+    k = n - i0
+    kt = np.arange(k) / SR
+    thud = np.sin(2 * np.pi * np.cumsum(np.linspace(85, 40, k)) / SR) * np.exp(-kt / 0.18)
+    thud += bp(r.standard_normal(k), 80, 900) * np.exp(-kt / 0.09) * 0.8
+    hit = np.zeros(n)
+    hit[i0:] = thud * 0.9
+    out = room(mix(v, gasp, hit), 0.35, 0.3, 5000)
+    save("scream", out)
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
@@ -723,3 +759,4 @@ if __name__ == "__main__":
     chores()
     endings()
     whisper_tape()
+    scream()

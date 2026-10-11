@@ -208,7 +208,7 @@ func sleep() -> void:
 	sleeping = false
 
 
-## NIGHT 3, 3:12 AM. A door bursts open. Something stands outside the bedroom
+## NIGHT 3, 3:33 AM. A door bursts open. Something stands outside the bedroom
 ## window, looking in. Walk up to it and it is gone. Then: back to bed.
 func _night_waking() -> void:
 	var p = WorldState.player
@@ -222,8 +222,8 @@ func _night_waking() -> void:
 		if sd.armed:
 			sd.armed.disarm("night waking")
 		sd.recover_until = WorldState.sim_time + 600.0
-	# 3:12 in the morning, every light in the house is off
-	WorldState.clock_start_minutes = 3.0 * 60.0 + 12.0 - WorldState.sim_time / 60.0
+	# 3:33 in the morning, every light in the house is off
+	WorldState.clock_start_minutes = 3.0 * 60.0 + 33.0 - WorldState.sim_time / 60.0
 	for k in WorldState.objects.keys():
 		var o = WorldState.objects[k]
 		if is_instance_valid(o) and o is LightFixture and h.contains_point(o.global_position):
@@ -265,7 +265,7 @@ func _night_waking() -> void:
 	p.sleeping = false
 	sleeping = false
 	if hud:
-		hud.title_card("3:12")
+		hud.title_card("3:33")
 	# it stays until you come close (or stare long enough), then it is gone
 	var stare := 0.0
 	var t := 0.0

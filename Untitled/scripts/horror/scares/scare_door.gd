@@ -24,7 +24,7 @@ func _init() -> void:
 
 func _candidates() -> Array:
 	var out := []
-	var used: Array = WorldState.get_state("scare/doors_used", [])
+	var used: Array = (WorldState.get_state("scare/doors_used", []) as Array).duplicate()
 	for did in SPOTS:
 		var d := WorldState.get_obj(did) as Door
 		if d and not d.is_open and not did in used:

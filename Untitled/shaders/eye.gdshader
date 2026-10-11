@@ -11,6 +11,8 @@ uniform float dilate = 1.0;
 uniform float fade : hint_range(0.0, 1.0) = 1.0;
 uniform float glow = 1.0;
 uniform float surround = 0.85;   // how much dark skin around it (0 = only the eye)
+uniform float bloodshot = 0.0;   // red veins, yellowed white (the thing in the bedroom)
+uniform float iris_pale = 0.0;   // a milky, almost white iris
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vnoise(vec2 p) {
@@ -34,6 +36,11 @@ void fragment() {
 	sh *= 0.55 + 0.45 * smoothstep(-0.02, 0.22, top - p.y);
 	sh *= 0.85 + 0.15 * vnoise(p * 9.0);
 	vec3 col = vec3(sh) * vec3(0.96, 0.94, 0.92);
+	// veins creeping in from the corners
+	float vein = smoothstep(0.62, 0.7, vnoise(vec2(p.x * 3.0, p.y * 26.0 + vnoise(p * 6.0) * 4.0)));
+	vein *= smoothstep(0.15, 0.85, abs(x));
+	col = mix(col, col * vec3(0.92, 0.8, 0.62), bloodshot);
+	col = mix(col, vec3(0.5, 0.04, 0.03), vein * bloodshot * 0.85);
 	// iris with fibres and a dark limbal ring
 	float ir = 0.27;
 	float iris = smoothstep(ir, ir - 0.012, r);
@@ -41,6 +48,7 @@ void fragment() {
 	float fib = vnoise(vec2(ang * 9.0, r * 22.0));
 	vec3 icol = vec3(0.05 + 0.13 * fib * smoothstep(0.08, ir, r));
 	icol *= 1.0 - 0.6 * smoothstep(ir - 0.06, ir, r);
+	icol = mix(icol, vec3(0.5 + 0.25 * fib) * (1.0 - 0.5 * smoothstep(ir - 0.05, ir, r)), iris_pale);
 	col = mix(col, icol, iris);
 	// pupil
 	float pr = 0.115 * dilate;

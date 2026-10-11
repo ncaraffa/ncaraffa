@@ -377,7 +377,6 @@ func _animate(delta: float) -> void:
 	var raise := -_arm_raise * 70.0
 	parts.l_shoulder.rotation_degrees = Vector3(-sw * arm_amp + raise - 6.0, 0, -3.0)
 	parts.r_shoulder.rotation_degrees = Vector3(sw * arm_amp + raise - 4.0, 0, 5.0)
-	parts.l_shoulder.position.y = 0.55
 	parts.neck.rotation_degrees.x = 16.0 + _lean * 10.0
 	parts.l_elbow.rotation_degrees.x = -8.0 - _arm_raise * 25.0
 	parts.r_elbow.rotation_degrees.x = -8.0 - _arm_raise * 25.0

@@ -63,6 +63,11 @@ func generate(n: int) -> void:
 				_t("lock_front", "Lock the front door"), _t("mail", "Check the mailbox"),
 				_t("no_look_6", "Don't look at house number 6", false, true),
 				_t("alone", "Make sure you're alone.", false, true)]
+	# a new list: yesterday's ticks mean nothing tonight (task/last_action_time
+	# is not a tick and stays)
+	for k in WorldState.state.keys():
+		if String(k).begins_with("task/") and k != "task/last_action_time":
+			WorldState.set_state(k, false)
 	WorldState.set_state("tasks/night", n)
 	list_changed.emit()
 

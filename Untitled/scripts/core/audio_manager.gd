@@ -54,6 +54,7 @@ const MIX := {
 	# the tape and the endings (own buses, never faded with the world)
 	"vhs_hiss": [-15.0, 1.0, 1.0, "music"], "vhs_insert": [-2.0, 2.0, 12.0, "sfx"],
 	"tape_scare": [2.0, 1.0, 1.0, "music"], "final_scare": [2.0, 1.0, 1.0, "music"], "whisper_tape": [2.0, 1.0, 1.0, "music"],
+	"scream": [6.0, 1.0, 1.0, "music"],
 }
 
 const LOOPS := [
@@ -213,6 +214,20 @@ func resolve_bus(sound_name: String, pos: Vector3, hint := "") -> String:
 	return "SFXIn" if inside else "SFXOut"
 
 
+## A sound with no position has no inside/outside: neutral buses, no muffling.
+func _flat_bus(sound_name: String) -> String:
+	match String(mix_entry(sound_name)[3]):
+		"ambience":
+			return "Ambience"
+		"horror":
+			return "Horror"
+		"ui":
+			return "UI"
+		"music":
+			return "Music"
+	return "SFX"
+
+
 # ------------------------------------------------------------------ library
 func stream(sound_name: String) -> AudioStream:
 	if _cache.has(sound_name):
@@ -298,11 +313,14 @@ func make_emitter(parent: Node3D, sound_name: String, local_pos := Vector3.ZERO,
 
 ## Non-positional sound (inside the player's head: UI, the handset, beds).
 func play_flat(sound_name: String, offset_db := 0.0, bus := "", pitch := 1.0) -> AudioStreamPlayer:
+	var st := stream(sound_name)
+	if st == null:
+		return null
 	var p := AudioStreamPlayer.new()
-	p.stream = stream(sound_name)
+	p.stream = st
 	p.volume_db = db(sound_name) + offset_db
 	p.pitch_scale = pitch
-	p.bus = bus if bus != "" else resolve_bus(sound_name, Vector3.ZERO, "")
+	p.bus = bus if bus != "" else _flat_bus(sound_name)
 	add_child(p)
 	p.finished.connect(p.queue_free)
 	p.play()

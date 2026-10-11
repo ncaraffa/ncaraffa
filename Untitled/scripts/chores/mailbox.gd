@@ -46,7 +46,7 @@ func interact(_player: Node) -> void:
 		return
 	WorldState.set_state("mail/text", "")
 	WorldState.set_state("mail/collected_n%d" % int(WorldState.get_state("night", 1)), true)
-	var archive: Array = WorldState.get_state("mail/archive", [])
+	var archive: Array = (WorldState.get_state("mail/archive", []) as Array).duplicate()
 	archive.append(text)
 	WorldState.set_state("mail/archive", archive)
 	AudioManager.play_ui("paper")

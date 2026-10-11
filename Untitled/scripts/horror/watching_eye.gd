@@ -11,6 +11,8 @@ var quads: Array = []
 var target: Node3D = null
 var size := 0.12
 var turn_speed := 1.5
+var dilate_base := 1.0
+var blinks := true
 var _blink_t := 3.0
 var _open := 0.0
 var _open_target := 1.0
@@ -76,9 +78,9 @@ func _process(delta: float) -> void:
 	var depth := maxf(absf(lp.z), 0.4)
 	var look := Vector2(clampf(lp.x / depth * 1.3, -1.0, 1.0), clampf(lp.y / depth * 1.6, -1.0, 1.0))
 	mat.set_shader_parameter("look", look)
-	mat.set_shader_parameter("dilate", 1.0 + 0.08 * sin(Time.get_ticks_msec() * 0.0013))
+	mat.set_shader_parameter("dilate", dilate_base + 0.08 * sin(Time.get_ticks_msec() * 0.0013))
 	# blinking
-	if not _closing:
+	if not _closing and blinks:
 		_blink_t -= delta
 		if _blink_t <= 0.0:
 			_blink_t = randf_range(2.5, 6.5)

@@ -73,6 +73,55 @@ func _run() -> void:
 	var tape_local: Vector3 = house.to_local(WS.get_obj("vhs_tape").global_position)
 	ok(Rect2(13.1, 8.0, 0.6, 1.2).has_point(Vector2(tape_local.x, tape_local.z)) and tape_local.y > 0.4, "the tape lies on the living-room coffee table (%s)" % str(tape_local.snapped(Vector3.ONE * 0.01)))
 
+	print("[audit fixes]")
+	var dd = WS.get_obj("dishes")
+	var fc = WS.get_obj("faucet_kitchen")
+	WS.set_state("dishes/dirty", 3)
+	if not fc.running:
+		fc.interact(p)
+	for i in 4:
+		dd.interact(p)
+	await secs(1.4)
+	ok(int(WS.get_state("dishes/dirty")) == 2, "mashing E washes one dish at a time (%d left)" % int(WS.get_state("dishes/dirty")))
+	dd.interact(p)
+	await secs(0.3)
+	fc.interact(p)
+	await secs(1.2)
+	ok(int(WS.get_state("dishes/dirty")) == 2 and not fc.running, "turning the water off mid-wash leaves that dish dirty")
+	WS.set_state("task/hall_light", true)
+	WS.set_state("task/last_action_time", 12.5)
+	tm.generate(2)
+	ok(WS.get_state("task/hall_light") == false, "a new list forgets yesterday's ticks")
+	ok(is_equal_approx(float(WS.get_state("task/last_action_time")), 12.5), "...but not the time of the last action")
+	tm.generate(1)
+	var notified := []
+	var cb := func(k, _v): notified.append(k)
+	WS.state_changed.connect(cb)
+	var arr: Array = WS.get_state("mail/archive", [])
+	WS.set_state("mail/archive", arr)
+	arr.append("x")
+	WS.set_state("mail/archive", arr)
+	WS.state_changed.disconnect(cb)
+	ok(notified.count("mail/archive") >= 2, "an array changed in place still notifies (%d)" % notified.count("mail/archive"))
+	WS.set_state("mail/archive", [])
+	var am = root.get_node("AudioManager")
+	var nodes_before: int = am.get_child_count()
+	ok(am.play_flat("no_such_sound_xyz") == null, "a missing sound gives no player")
+	for i in 4:
+		am.play_flat("no_such_sound_xyz")
+	ok(am.get_child_count() == nodes_before, "missing sounds leave no nodes behind")
+	WS.warnings.clear()
+	var pc = WS.get_obj("computer")
+	if pc:
+		p.begin_focus(pc, p.camera.global_transform)
+		await secs(0.8)
+		p.end_focus()
+		ok(p.is_busy(), "while the camera glides back to the head you can't walk yet")
+		await secs(0.7)
+		ok(not p.is_busy() and not p.camera.top_level, "then it is back on the head")
+	else:
+		ok(false, "computer exists")
+
 	print("[notes fit on the paper]")
 	var hud = WS.get_obj("hud")
 	var letter = WS.get_obj("fridge_letter")
@@ -281,12 +330,14 @@ func _run() -> void:
 			t += 0.1
 			if not seen.has(te.phase):
 				seen[te.phase] = WS.sim_time
-		for ph in ["insert", "tv", "fullscreen", "empty", "person", "silence", "figure", "head_turn", "stare", "run", "blackout", "title", "done"]:
+		for ph in ["insert", "tv", "fullscreen", "empty", "person", "silence", "figure", "head_turn", "stare", "enters", "scream", "aftermath", "run", "blackout", "title", "done"]:
 			ok(seen.has(ph), "FINAL 1 goes through '%s'" % ph)
 		if seen.has("empty") and seen.has("person"):
 			ok(seen["person"] - seen["empty"] >= 25.0, "25-35 s of nothing before the person (%.0f s)" % (seen["person"] - seen["empty"]))
 		if seen.has("insert") and seen.has("fullscreen"):
 			ok(seen["fullscreen"] - seen["insert"] < 4.5, "the tape is on screen quickly (%.1f s)" % (seen["fullscreen"] - seen["insert"]))
+		if seen.has("enters") and seen.has("scream") and seen.has("run"):
+			ok(seen["scream"] > seen["enters"] and seen["run"] - seen["scream"] >= 3.0, "it goes into the bedroom, a scream, seconds later it runs (%.1f s)" % (seen["run"] - seen["scream"]))
 		if seen.has("run") and seen.has("blackout"):
 			ok(seen["blackout"] - seen["run"] < 1.0, "blackout right after the run (%.2f s)" % (seen["blackout"] - seen["run"]))
 		ok(te.overlay.black.color.a == 1.0, "the screen is totally black")

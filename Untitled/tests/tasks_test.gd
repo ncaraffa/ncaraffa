@@ -162,7 +162,7 @@ func _last_task() -> void:
 		var sub: String = WS.get_obj("hud").subtitle.text
 		if sub != "":
 			whisper_sub = sub
-	for ph in ["steps", "door", "stopped", "mattress", "whisper", "scare", "blackout", "title", "done"]:
+	for ph in ["steps", "door", "stopped", "mattress", "whisper", "lamp", "scare", "blackout", "title", "done"]:
 		ok(seen.has(ph), "FINAL 2 goes through '%s'" % ph)
 	ok(whisper_sub == "You forgot to check the tape.", "the whisper says exactly 'You forgot to check the tape.' ('%s')" % whisper_sub)
 	ok(int(WS.get_state("night")) == 5, "there is no night 6")

@@ -76,7 +76,8 @@ func get_group(prefix: String) -> Array:
 func set_state(key: String, value) -> void:
 	var old = state.get(key)
 	state[key] = value
-	if old != value:
+	# an Array/Dictionary changed in place compares equal to itself: always notify
+	if old != value or (typeof(value) in [TYPE_ARRAY, TYPE_DICTIONARY] and is_same(old, value)):
 		state_changed.emit(key, value)
 
 
