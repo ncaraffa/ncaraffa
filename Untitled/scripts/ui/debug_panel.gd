@@ -123,6 +123,10 @@ func _build_tabs(tabs: TabContainer) -> void:
 	_btn(nr, "add late list line", func(): WorldState.get_obj("tasks")._add_late_line())
 	_btn(nr, "3 am awakening now", func(): WorldState.get_obj("night_manager")._night_waking())
 	_btn(nr, "hall silhouette (night 4) now", func(): WorldState.get_obj("hall_scene").debug_force())
+	_btn(nr, "toggle power out (night 5)", func():
+		var v: bool = not WorldState.get_state("power/out", false)
+		WorldState.set_state("power/out", v)
+		info.text = "power out: %s" % v)
 	var cr := _row(nt, "cult:")
 	for kind in ["altar_b2", "chalk_back_door", "kitchen_circle", "garage_candles", "porch_candles", "island_ring",
 			"wall_writing", "mirror_sigil", "inverted_cross", "dining_ritual", "wardrobe_sigil"]:

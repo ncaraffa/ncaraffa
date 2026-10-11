@@ -22,9 +22,9 @@ const SCARE_SCRIPTS := [
 	"res://scripts/horror/scares/scare_contort.gd",
 ]
 ## Max intense scares per night (index = night; there are five).
-const QUOTA := [0, 0, 1, 1, 2, 3]
+const QUOTA := [0, 0, 0, 1, 2, 3]
 ## Chance per evaluation (every ~20 s) to arm something, before tension.
-const BASE_CHANCE := [0.0, 0.0, 0.09, 0.12, 0.16, 0.2]
+const BASE_CHANCE := [0.0, 0.0, 0.0, 0.12, 0.16, 0.22]
 
 var scares: Array = []
 var night := 1

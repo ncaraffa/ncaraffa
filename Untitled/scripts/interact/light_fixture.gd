@@ -46,7 +46,18 @@ func interact(_player: Node) -> void:
 	WorldState.log_interaction("lamp", obj_id)
 
 
-func set_on(value: bool, silent := false) -> void:
+## Part of the player's house? (On the last night the house has no power.)
+func _in_house() -> bool:
+	if not has_meta("in_house"):
+		var h = WorldState.get_obj("house")
+		set_meta("in_house", h != null and h.is_ancestor_of(self))
+	return get_meta("in_house")
+
+
+## `force` is only for the endings' cinematics.
+func set_on(value: bool, silent := false, force := false) -> void:
+	if value and not force and WorldState.get_state("power/out", false) and _in_house():
+		value = false
 	is_on = value
 	for i in lights.size():
 		lights[i].visible = value

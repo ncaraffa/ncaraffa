@@ -47,6 +47,13 @@ const EVENT_SCRIPTS := [
 	"res://scripts/events/ev_manifest.gd",
 	"res://scripts/events/ev_object_moved.gd",
 	"res://scripts/events/ev_tv_on.gd",
+	"res://scripts/events/ev_hall_cross.gd",
+	"res://scripts/events/ev_breath.gd",
+	"res://scripts/events/ev_window_bang.gd",
+	"res://scripts/events/ev_hall_run.gd",
+	"res://scripts/events/ev_near_apparition.gd",
+	"res://scripts/events/ev_tv_image.gd",
+	"res://scripts/events/ev_eyes.gd",
 ]
 
 const FIRST_DELAY := Vector2(90.0, 150.0)
@@ -259,9 +266,17 @@ func _pick(pool: Array, after_phase: bool) -> MysteryEvent:
 
 
 func _weight(ev: MysteryEvent, after_phase: bool) -> float:
+	var w := ev.weight
+	if ev.track == "side":
+		# the same apparition should not keep coming back: each repeat is rarer
+		w /= 1.0 + 0.8 * float(fired.get(ev.id, 0))
+		# the eyes belong to the dark of the last night
+		if ev.id == "eyes" and WorldState.get_state("power/out", false):
+			w *= 4.0
+		return w
 	if not after_phase:
-		return ev.weight
-	return ev.weight / (1.0 + float(fired.get(ev.id, 0)))
+		return w
+	return w / (1.0 + float(fired.get(ev.id, 0)))
 
 
 func _start_event(ev: MysteryEvent) -> bool:

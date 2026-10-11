@@ -9,7 +9,7 @@ var _to := Vector3.ZERO
 
 func _init() -> void:
 	id = "runner"
-	min_night = 2
+	min_night = 3
 	weight = 1.1
 	timeout = 150.0
 

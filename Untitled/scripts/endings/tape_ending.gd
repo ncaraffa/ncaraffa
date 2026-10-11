@@ -11,7 +11,7 @@ extends Node
 ## whatever the nights moved, is in the recording. The recording is "1986".
 ## Nobody explains that.
 ##
-## Sequence: empty room (45-60 s) -> an ordinary person crosses, goes to the
+## Sequence: empty room (25-35 s) -> an ordinary person crosses, goes to the
 ## kitchen, switches off the living-room light on the way back, leaves ->
 ## silence -> a black figure in the hallway, still -> its head turns, slowly,
 ## to the camera -> it stares -> it RUNS at the camera -> blackout, silence,
@@ -46,7 +46,7 @@ var person: ShadowFigure
 var fig: ShadowFigure
 var tv: TV
 var deck: Node3D
-## Seconds of empty room before anything happens (45-60).
+## Seconds of empty room before anything happens (25-35).
 var empty_secs := 0.0
 var rng := RandomNumberGenerator.new()
 
@@ -54,7 +54,7 @@ var rng := RandomNumberGenerator.new()
 func _ready() -> void:
 	name = "TapeEnding"
 	rng.randomize()
-	empty_secs = rng.randf_range(45.0, 60.0)
+	empty_secs = rng.randf_range(25.0, 35.0)
 
 
 func start(tv_node: TV, deck_node: Node3D = null) -> void:
@@ -103,11 +103,11 @@ func _run() -> void:
 			if hud.is_reading():
 				hud.close_note()
 	_build_recording()
-	await _wait(1.6)
+	await _wait(0.7)
 	# the TV wakes up, blue for a moment, then the tape
 	if tv:
 		tv.set_power(true, 3)
-	await _wait(1.3)
+	await _wait(0.6)
 	if tv:
 		tv.set_mode(5)
 		var m := StandardMaterial3D.new()
@@ -124,9 +124,9 @@ func _run() -> void:
 		var from: Transform3D = p.camera.global_transform
 		p.camera.global_transform = from
 		var tw := create_tween()
-		tw.tween_property(p.camera, "global_transform", to, 2.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	AudioManager.fade_world(-80.0, 3.0)
-	await _wait(2.8)
+		tw.tween_property(p.camera, "global_transform", to, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	AudioManager.fade_world(-80.0, 2.0)
+	await _wait(1.8)
 	# the recording, filling the screen
 	_set_phase("fullscreen")
 	_set_tape_lights()
@@ -138,8 +138,7 @@ func _run() -> void:
 	vhs_mat.set_shader_parameter("glitch", 0.6)
 	await _wait(0.5)
 	vhs_mat.set_shader_parameter("glitch", 0.0)
-	await _wait(3.5)
-	osd.visible = false
+	_hide_osd_later()
 	# 1 — NORMALITY. Nothing. The tape hisses.
 	_set_phase("empty")
 	await _wait(empty_secs)
@@ -166,6 +165,11 @@ func _main_view_off() -> void:
 
 func _exit_tree() -> void:
 	get_viewport().disable_3d = false
+
+
+func _hide_osd_later() -> void:
+	await _wait(3.5)
+	osd.visible = false
 
 
 func _build_recording() -> void:
@@ -254,7 +258,7 @@ func _set_tape_lights() -> void:
 	for id in ["hall_ceiling", "hall_ceiling_b", "foyer_ceiling", "living_ceiling", "kitchen_ceiling", "b1_lamp"]:
 		var l = WorldState.get_obj(id)
 		if l:
-			l.set_on(true, true)
+			l.set_on(true, true, true)
 	for id in ["door_b1", "door_b2"]:
 		var d = WorldState.get_obj(id)
 		if d and not d.is_open:

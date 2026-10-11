@@ -1,9 +1,11 @@
 shader_type spatial;
-render_mode diffuse_lambert, specular_disabled, cull_back;
+render_mode unshaded, cull_back;
 
-// A body that swallows light. Almost no albedo, a faint cold rim so the
-// silhouette reads against darkness, and a ragged, slowly crawling edge so it
-// never looks like a clean CG mesh. `dissolve` 0..1 erodes it (appear/vanish).
+// A body that swallows light: one flat, even darkness with no shading at all,
+// so no limb, joint or curve can be read inside it — only the outline, like a
+// hole cut out of the room. In darkness it is a hair lighter than black
+// (`rim_strength`) so the shape can still be made out. The edge is ragged and
+// slowly crawling. `dissolve` 0..1 erodes it (appear/vanish).
 uniform float dissolve : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 rim_color : source_color = vec3(0.07, 0.075, 0.09);
 uniform float rim_power = 4.0;
@@ -35,8 +37,6 @@ void fragment() {
 	if (keep < 0.18) {
 		discard;
 	}
-	ALBEDO = vec3(0.004, 0.004, 0.005);
-	ROUGHNESS = 1.0;
-	SPECULAR = 0.0;
-	EMISSION = rim_color * fres * rim_strength * (0.7 + 0.3 * n);
+	// pure black in light; only when asked to read in the dark (rim > 0.4) a hair lighter
+	ALBEDO = rim_color * max(rim_strength - 0.4, 0.0) * 0.25;
 }

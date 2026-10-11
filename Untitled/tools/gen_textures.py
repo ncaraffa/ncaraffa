@@ -542,3 +542,46 @@ if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "night":
     photo_cult()
     photo_altered()
     silhouette()
+
+
+def eye_icon(size=256, name="icon_eye"):
+    """The game's icon: the same eye the shader draws (shaders/eye.gdshader)."""
+    import numpy as np
+    from PIL import Image
+    ys, xs = np.mgrid[0:size, 0:size].astype(float)
+    px = (xs / size - 0.5) * 2.0 * 1.15
+    py = -(ys / size - 0.5) * 2.0 * 1.15
+    rng = np.random.default_rng(7)
+    noise = rng.random((size, size))
+    from scipy.ndimage import gaussian_filter
+    noise = gaussian_filter(noise, 3)
+    noise = (noise - noise.min()) / (noise.max() - noise.min())
+    hmax = 0.5 * np.power(np.clip(1.0 - px * px, 0, None), 0.8)
+    top = hmax + 0.03 * np.sin(px * 2.4 + 0.6)
+    bot = -hmax * 0.78
+    def ss(e0, e1, x):
+        t = np.clip((x - e0) / (e1 - e0), 0, 1)
+        return t * t * (3 - 2 * t)
+    inside = ss(0.0, 0.025, top - py) * ss(0.0, 0.025, py - bot)
+    r = np.sqrt(px ** 2 + py ** 2)
+    sh = (0.62 + 0.22 * (1 - np.abs(px))) * (0.55 + 0.45 * ss(-0.02, 0.22, top - py)) * (0.85 + 0.15 * noise)
+    col = sh * 0.95
+    ir = 0.27
+    iris = ss(ir, ir - 0.012, r)
+    ang = np.arctan2(py, px)
+    fib = 0.5 + 0.5 * np.sin(ang * 37.0 + noise * 6.0)
+    icol = (0.05 + 0.13 * fib * ss(0.08, ir, r)) * (1 - 0.6 * ss(ir - 0.06, ir, r))
+    col = col * (1 - iris) + icol * iris
+    pupil = ss(0.115, 0.105, r)
+    col = col * (1 - pupil)
+    hl = ss(0.034, 0.02, np.sqrt((px + 0.05) ** 2 + (py - 0.06) ** 2)) + 0.7 * ss(0.022, 0.012, np.sqrt((px - 0.04) ** 2 + (py - 0.065) ** 2))
+    col = col + hl
+    skin = (0.03 + 0.02 * noise) * ss(1.0, 0.25, np.sqrt((px * 0.8) ** 2 + (py * 1.5) ** 2))
+    col = skin * (1 - inside) + col * inside
+    v = (np.clip(col, 0, 1) * 255).astype(np.uint8)
+    rgb = np.stack([v, v, v], -1)
+    # round dark plate so it reads as an icon anywhere
+    plate = (np.sqrt((xs / size - 0.5) ** 2 + (ys / size - 0.5) ** 2) < 0.49).astype(np.uint8) * 255
+    img = Image.fromarray(np.dstack([rgb, plate]), "RGBA")
+    img.save(os.path.join(os.path.dirname(OUT.rstrip("/")) if False else OUT, name + ".png"))
+    print("tex", name)

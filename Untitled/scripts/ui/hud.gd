@@ -127,8 +127,10 @@ func _layout() -> void:
 	paper.size = Vector2(pw, ph)
 	paper.position = (s - paper.size) / 2.0
 	paper.rotation = deg_to_rad(-0.8)
-	note_text.position = Vector2(46, 50)
-	note_text.size = Vector2(pw - 92, ph - 100)
+	note_text.position = Vector2(46, 44)
+	note_text.size = Vector2(pw - 92, ph - 84)
+	if note_text.visible and note_root.visible:
+		_fit_note()
 	note_rich.position = Vector2(46, 50)
 	note_rich.size = Vector2(pw - 92, ph - 100)
 	thought_label.position = Vector2(0, s.y - 170)
@@ -201,9 +203,31 @@ func show_note(text: String) -> void:
 	note_rich.visible = false
 	note_text.visible = true
 	note_text.text = text
+	_fit_note()
 	note_root.visible = true
 	_reading = true
 	dot.visible = false
+
+
+## Long letters shrink their handwriting until they fit on the sheet.
+func _fit_note() -> void:
+	var font: Font = note_text.get_theme_font("font")
+	var w := note_text.size.x
+	var h := note_text.size.y
+	var chosen := 13
+	for fs in [22, 21, 20, 19, 18, 17, 16, 15, 14, 13]:
+		var line_h := font.get_height(fs) + 4.0
+		var lines := 0
+		for para in note_text.text.split("\n"):
+			if para == "":
+				lines += 1
+				continue
+			var sz := font.get_multiline_string_size(para, HORIZONTAL_ALIGNMENT_LEFT, w - 6.0, fs)
+			lines += maxi(1, int(round(sz.y / font.get_height(fs))))
+		if lines * line_h <= h - 10.0:
+			chosen = fs
+			break
+	note_text.add_theme_font_size_override("font_size", chosen)
 
 
 func close_note() -> void:

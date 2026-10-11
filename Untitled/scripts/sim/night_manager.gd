@@ -98,6 +98,14 @@ func _prepare_chores(n: int) -> void:
 		var hl = WorldState.get_obj("hall_ceiling")
 		if hl:
 			hl.set_on(true, true)
+	if n >= MAX_NIGHTS:
+		# the last night: no light in the house, all night, whatever you do
+		WorldState.set_state("power/out", true)
+		var h = WorldState.get_obj("house")
+		for k in WorldState.objects.keys():
+			var o = WorldState.objects[k]
+			if is_instance_valid(o) and o is LightFixture and h and h.is_ancestor_of(o):
+				o.set_on(false, true)
 	# safety net: nothing on tonight's list may already count as done
 	for t in tm.tasks:
 		if t.essential and tm._check(t):

@@ -19,7 +19,7 @@ func _init() -> void:
 	title = "Someone crossing a doorway"
 	track = "side"
 	intensity = 2
-	min_night = 4
+	min_night = 3
 	max_per_night = 1
 	resources = ["figure_inside"]
 	kinds = ["temporary"]

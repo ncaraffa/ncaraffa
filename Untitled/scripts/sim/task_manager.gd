@@ -58,8 +58,9 @@ func generate(n: int) -> void:
 		_:
 			# the fifth night is the last one. "Make sure you're alone." has no
 			# way to be ticked off, and it never stops you from going to bed.
+			# (no "lights" tonight: there is no power in the house)
 			tasks = [_t("trash", "Take out the trash"), _t("stove", "Check the stove"), _t("lock_back", "Lock the back door"),
-				_t("lock_front", "Lock the front door"), _t("mail", "Check the mailbox"), _t("lights", "Lights off downstairs before bed"),
+				_t("lock_front", "Lock the front door"), _t("mail", "Check the mailbox"),
 				_t("no_look_6", "Don't look at house number 6", false, true),
 				_t("alone", "Make sure you're alone.", false, true)]
 	WorldState.set_state("tasks/night", n)

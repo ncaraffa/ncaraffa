@@ -74,6 +74,27 @@ func _capsule(parent: Node3D, r: float, h: float, pos: Vector3, scale := Vector3
 	return mi
 
 
+## A round joint that fills the gap between two segments, so elbows, knees and
+## shoulders don't show as separate parts (no "wooden mannequin" look).
+func _joint(parent: Node3D, r: float, pos := Vector3.ZERO) -> void:
+	var m := SphereMesh.new()
+	m.radius = r
+	m.height = r * 2.0
+	m.radial_segments = 12
+	m.rings = 6
+	var mi := MeshInstance3D.new()
+	mi.mesh = m
+	mi.material_override = mat
+	parent.add_child(mi)
+	mi.position = pos
+	var sh := MeshInstance3D.new()
+	sh.mesh = m
+	sh.material_override = shroud
+	sh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.add_child(sh)
+	sh.scale = Vector3.ONE * 1.12
+
+
 func _pivot(parent: Node3D, n: String, pos: Vector3) -> Node3D:
 	var p := Node3D.new()
 	p.name = n
@@ -89,24 +110,33 @@ func _build() -> void:
 	var spine := _pivot(hips, "spine", Vector3(0, 0.08, 0))
 	_capsule(spine, 0.13, 0.42, Vector3(0, 0.2, 0), Vector3(1.0, 1.0, 0.72))      # waist
 	_capsule(spine, 0.165, 0.42, Vector3(0, 0.44, 0), Vector3(1.2, 1.0, 0.7))     # chest
-	_capsule(spine, 0.1, 0.46, Vector3(0, 0.58, -0.01), Vector3(1.75, 0.5, 0.65)) # shoulders
+	_capsule(spine, 0.1, 0.46, Vector3(0, 0.56, -0.01), Vector3(1.8, 0.55, 0.65)) # shoulders
+	# sloping shoulders (neck to shoulder), so the outline is a body, not a robot
+	for sd: float in [-1.0, 1.0]:
+		var trap := _capsule(spine, 0.065, 0.3, Vector3(sd * 0.11, 0.6, -0.01), Vector3(1.0, 1.0, 0.8))
+		trap.rotation_degrees.z = sd * 68.0
 	var neck := _pivot(spine, "neck", Vector3(0, 0.66, 0.02))
-	_capsule(neck, 0.048, 0.2, Vector3(0, 0.08, 0))
+	_capsule(neck, 0.058, 0.22, Vector3(0, 0.08, 0))
+	_capsule(spine, 0.15, 0.5, Vector3(0, 0.3, 0), Vector3(1.1, 1.0, 0.7))       # fills waist-to-chest
 	var head := _pivot(neck, "head", Vector3(0, 0.17, 0.01))
-	_capsule(head, 0.098, 0.28, Vector3(0, 0.1, 0.0), Vector3(0.9, 1.0, 1.0))
+	_capsule(head, 0.106, 0.27, Vector3(0, 0.1, 0.0), Vector3(0.92, 1.0, 1.04))
 	for side: float in [-1.0, 1.0]:
 		var sname := "l" if side < 0 else "r"
-		var sh := _pivot(spine, sname + "_shoulder", Vector3(side * 0.24, 0.57, 0))
-		_capsule(sh, 0.052, 0.4, Vector3(0, -0.18, 0))
+		var sh := _pivot(spine, sname + "_shoulder", Vector3(side * 0.235, 0.55, 0))
+		_capsule(sh, 0.057, 0.4, Vector3(0, -0.2, 0))
 		var el := _pivot(sh, sname + "_elbow", Vector3(0, -0.36, 0))
-		_capsule(el, 0.044, 0.4, Vector3(0, -0.19, 0))
+		_joint(el, 0.047)
+		_capsule(el, 0.045, 0.42, Vector3(0, -0.19, 0))
 		var hand := _pivot(el, sname + "_hand", Vector3(0, -0.38, 0))
+		_joint(hand, 0.042)
 		# long, narrow hands: the one detail that is slightly wrong
 		_capsule(hand, 0.034, 0.28, Vector3(0, -0.12, 0.0), Vector3(1.25, 1.0, 0.55))
 		var hip := _pivot(hips, sname + "_hip", Vector3(side * 0.1, -0.04, 0))
-		_capsule(hip, 0.07, 0.5, Vector3(0, -0.22, 0))
+		_joint(hip, 0.085, Vector3(0, -0.02, 0))
+		_capsule(hip, 0.082, 0.52, Vector3(0, -0.22, 0))
 		var knee := _pivot(hip, sname + "_knee", Vector3(0, -0.46, 0))
-		_capsule(knee, 0.055, 0.48, Vector3(0, -0.22, 0))
+		_joint(knee, 0.066)
+		_capsule(knee, 0.064, 0.5, Vector3(0, -0.22, 0))
 		var foot := _pivot(knee, sname + "_foot", Vector3(0, -0.46, 0))
 		_capsule(foot, 0.045, 0.24, Vector3(0, -0.02, 0.06)).rotation_degrees.x = 90
 
@@ -264,6 +294,16 @@ func make_person(shirt: Color, pants: Color, skin := Color(0.78, 0.6, 0.5), hair
 		sleeve.material_override = m_shirt
 		parts[side + "_shoulder"].add_child(sleeve)
 		sleeve.position = Vector3(0, -0.14, 0)
+
+
+## Render layers of every mesh (e.g. visible only to a secondary camera).
+func set_layers(mask: int) -> void:
+	var stack: Array = [self]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is VisualInstance3D:
+			n.layers = mask
+		stack.append_array(n.get_children())
 
 
 ## From complete stillness to right there. Not a walk: a violent rush.

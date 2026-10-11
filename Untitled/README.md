@@ -41,11 +41,11 @@ Configurações (menu e pausa): volume geral, **ambiente**, **efeitos**, **susto
 ### Progressão
 | Noite | Clima | O que se torna possível |
 |---|---|---|
-| 1 | normalidade | eventos originais, vida do bairro, portas que se abrem rangendo, luz que falha no cômodo onde você está |
-| 2 | desconfiança | figuras distantes (rua, janelas vizinhas), cânticos na casa nº 6, objetos caindo |
-| 3 | medo | primeiros sustos intensos (até 1), figura na cerca do quintal e no fim do corredor, batidas fortes, luzes que se apagam; símbolo de giz aparece na porta dos fundos |
-| 4 | paranoia | até 2 sustos, figura cruzando portas, sussurros; a foto do corredor muda; velas acesas na garagem; linha nova na lista |
-| 5 | a última | até 3 sustos; "Make sure you're alone." na lista (não tem como marcar e nunca impede de dormir); ao deitar: FINAL 2 |
+| 1 | familiaridade | eventos originais, vida do bairro (vizinhos chegando, passos lá fora, vento, TV estalando), porta que range, luz que falha, telefone que toca uma vez, objeto fora do lugar. Nenhum susto |
+| 2 | estranheza | primeiros sinais do culto (altar), silhuetas **distantes** (rua, janela vizinha), cânticos, respiração sem origem, batidas no vidro, pancada na janela, porta que estava fechada aberta, arrasto num cômodo vazio, um olho enorme na TV. Ainda nenhum susto |
+| 3 | presença | figuras **dentro** de casa (atravessando o fundo do corredor, no canto do olho, numa passagem), passos correndo, olhos no escuro, a TV mostrando alguém atrás de você; até 1 susto; o despertar das 3:12 |
+| 4 | paranoia | a silhueta que entra no seu quarto ("Don't wake him up."); até 2 sustos; foto do corredor alterada; manifestações que somem quando você volta ao cômodo |
+| 5 | desfecho | **a casa fica sem luz a noite inteira** (interruptores e abajures não acendem; só o forno, a TV e as casas vizinhas brilham); olhos no escuro mais prováveis; até 3 sustos; "Make sure you're alone." na lista; ao deitar: FINAL 2 |
 
 A progressão muda **probabilidades e possibilidades**, nunca um roteiro minuto a minuto.
 
@@ -56,11 +56,11 @@ A progressão muda **probabilidades e possibilidades**, nunca um roteiro minuto 
 Os dois terminam a partida com **blackout total**, silêncio, e então surge devagar, centralizado: **Untitled...** — e o jogo volta ao menu (dá para começar uma partida nova). Nenhuma tela de vitória, nenhuma explicação.
 
 ### FINAL 1 — THE TAPE (`endings/tape_ending.gd`)
-- A fita está **escondida e é opcional**: no chão do closet do corredor, no fundo, embaixo dos casacos. Etiqueta escrita à mão: **UNTITLED — 1986**. Nenhuma tarefa manda procurá-la.
+- A fita é **opcional**: está largada na mesinha de centro da sala, ao lado do controle remoto. Etiqueta escrita à mão: **UNTITLED — 1986**. Nenhuma tarefa manda pegá-la.
 - Com a fita na mão, olhe para o videocassete embaixo da TV da sala (ou para a própria TV): **"Put the tape in"**.
 - A TV liga, a câmera se aproxima da tela e a gravação ocupa a tela inteira (4:3, granulação, ruído, chroma borrado, faixa de tracking, cores lavadas, áudio abafado no bus *Tape*, data da filmadora "OCT.30 1986").
 - **A gravação mostra a casa atual**: uma segunda câmera, dentro de um `SubViewport`, renderiza o **mundo real** no momento em que a fita começa (mesmo `World3D`). Tudo que foi movido — por você ou pelas noites — aparece movido na fita "de 1986". Cada viewport tem sua câmera atual (sem conflito) e a câmera da fita nunca enxerga a TV (sem recursão).
-- Sequência: 45–60 s de sala vazia (só o chiado) → uma pessoa comum sai do quarto, atravessa o hall até a cozinha, volta, apaga a luz da sala no interruptor do arco e entra no quarto → silêncio → uma figura preta aparece no corredor, parada → a cabeça vira devagar, em trancos, até a câmera → ela encara; a fita quase silencia → **ela corre absurdamente rápido até a câmera** (~5 m em 0,27 s, inclinada para frente, sem caminhada), sincronizada com um impacto sonoro forte no bus *Ending* (compressor + limiter do master) → **blackout instantâneo**, todo som cortado → "Untitled..." → menu.
+- A fita entra na tela em ~2 s. Sequência: 25–35 s de sala vazia (só o chiado) → uma pessoa comum sai do quarto, atravessa o hall até a cozinha, volta, apaga a luz da sala no interruptor do arco e entra no quarto → silêncio → uma figura preta aparece no corredor, parada → a cabeça vira devagar, em trancos, até a câmera → ela encara; a fita quase silencia → **ela corre absurdamente rápido até a câmera** (~5 m em 0,27 s, inclinada para frente, sem caminhada), sincronizada com um impacto sonoro forte no bus *Ending* (compressor + limiter do master) → **blackout instantâneo**, todo som cortado → "Untitled..." → menu.
 
 ### FINAL 2 — THE LAST TASK (`endings/last_task_ending.gd`)
 - Acontece ao deitar no fim da **noite 5** sem ter assistido à fita.
@@ -95,7 +95,7 @@ tests/       run_tests · door_test · horror_test · menu_test · soak_test · 
 | Camada | Quem cuida | Exemplos |
 |---|---|---|
 | **A — vida cotidiana** (frequente, não assusta) | `AmbientActivityManager` | carros, cachorros, vento, geladeira, rangidos, luzes de vizinhos, **vizinho chegando em casa** (pessoa andando até a porta, luz acende), **passos do lado de fora** junto à parede, **rajada que mexe uma porta**, **TV estalando** |
-| **B — estranheza** (dúvida) | `EventDirector` (trilhas principal e secundária) | os 10 originais + silhueta na rua, figura em janela, porta que abre sozinha, luz que falha, **batidas no vidro**, **telefone que toca uma vez**, **porta que estava fechada aparece aberta (às vezes com a luz acesa)**, **arrasto de móvel num cômodo vazio**, **símbolo que aparece onde você não olhava**, **objeto que muda de lugar**, **TV liga sozinha** |
+| **B — estranheza** (dúvida) | `EventDirector` (trilhas principal e secundária) | os 10 originais + silhueta na rua, figura em janela, porta que abre sozinha, luz que falha, batidas no vidro, telefone que toca uma vez, porta fechada que aparece aberta, arrasto num cômodo vazio, símbolo onde você não olhava, objeto que muda de lugar, TV que liga sozinha, **figura atravessando o fundo do corredor** (`hall_cross`), **respiração ao lado** (`breath`, para quando você olha), **pancada na janela** (`window_bang`, às vezes deixa uma marca de mão que some), **passos correndo** (`hall_run`), **aparição no canto do olho** (`near_apparition`), **imagem na TV** (`tv_image`: um olho que segue você, ou a sala vista por trás de você com alguém às suas costas — só na TV), **olhos no escuro** (`eyes`) |
 | **C — terror intenso** (raro) | `ScareDirector` | hallway, door, window, behind, tv, **runner** (a silhueta cruza seu campo de visão absurdamente rápido), **contort** (imóvel no fundo do cômodo; o pescoço cresce, a cabeça tomba de lado, a luz morre, some) |
 
 **Ritmo**: a noite respira em ciclos — *calm → build → peak → release* (durações sorteadas). Na calmaria só passam eventos leves e com intervalos longos; na subida e no pico os intervalos encurtam e os perturbadores são liberados; sustos intensos só são armados em *build/peak*. A tensão sobe e desce em vez de ficar constante. Nada é um jumpscare a cada dois minutos.
@@ -122,14 +122,20 @@ tests/       run_tests · door_test · horror_test · menu_test · soak_test · 
 | **contort** (G, noite 3+) | virar-se para o fundo de um cômodo | ela está lá, imóvel; olhando, o pescoço se alonga e a cabeça tomba de lado; a luz apaga, algo cai, a luz volta: nada |
 
 ### Figuras escuras
-Silhueta humana estilizada (cabeça, pescoço, tronco, quadril, braços e pernas em dois segmentos, mãos longas), postura levemente curvada, material que "engole" a luz, contorno frio tênue e uma casca de fumaça que deixa a borda irregular. Estados: oculta, aparecendo, observando, movendo, recuando, desaparecendo, susto. Aparecem/somem por dissolução, instantaneamente ou piscando — muitas vezes só quando o jogador não está olhando.
+Silhueta humana (cabeça, ombros caídos, tronco, braços e pernas com articulações preenchidas, mãos longas), postura levemente curvada. O material é **preto chapado, sem sombreamento nenhum**: não dá para ler membros nem curvas por dentro, só o contorno — como um recorte no cômodo. Uma casca de fumaça deixa a borda irregular. No escuro total (noite 5) ela fica um fio mais clara que o preto para ainda ser percebida. Estados: oculta, aparecendo, observando, movendo, recuando, desaparecendo, susto. Aparecem/somem por dissolução, instantaneamente ou piscando — muitas vezes só quando o jogador não está olhando.
 
 Aparições sem susto (trilha secundária): parada do outro lado da rua sob um poste (some ou caminha para trás de uma casa), silhueta na janela iluminada de um vizinho, perto da cerca do quintal (pode sumir quando você entra), parada no fim do corredor no escuro (some quando você desvia o olhar, recua para o banheiro ou vira a cabeça e some), cruzando uma passagem do outro lado do cômodo.
 
 ### Áudio
-Todos os arquivos são normalizados (−1 dBFS de pico). Os níveis ficam numa **tabela única** (`AudioManager.MIX`: ganho, distância de referência, distância máxima, categoria). Buses: **Master** (compressor + limiter a −1 dB, protege fones) ← **Ambience** (AmbIn/AmbOut), **SFX** (SFXIn/SFXOut, Room = reverb da casa, Phone), **Horror** (compressor próprio), **Music**, **UI**. Sons de dentro ficam abafados quando você está fora e vice-versa. A proximidade pode somar no máximo +3 dB ao nível de mixagem.
+Verificação de mixagem (pico de RMS em janela de 400 ms + ganho da tabela, na distância de referência): sustos ≈ −5 dB, sons perturbadores ≈ −14 dB, cotidiano ≈ −20 dB, ambiente ≈ −20 dB — ~15 dB de contraste para os sustos, todos abaixo do limiter. Foram aumentados os passos no piso/madeira, o tique, rangidos, canos, as batidas no vidro e o deslocamento de ar. Todos os arquivos são normalizados (−1 dBFS de pico). Os níveis ficam numa **tabela única** (`AudioManager.MIX`: ganho, distância de referência, distância máxima, categoria). Buses: **Master** (compressor + limiter a −1 dB, protege fones) ← **Ambience** (AmbIn/AmbOut), **SFX** (SFXIn/SFXOut, Room = reverb da casa, Phone), **Horror** (compressor próprio), **Music**, **UI**. Sons de dentro ficam abafados quando você está fora e vice-versa. A proximidade pode somar no máximo +3 dB ao nível de mixagem.
 
 Novos sons sintetizados: impactos de susto (3), grito curto, estouro da TV, respiração próxima, sussurro, batida na janela, pancadas na porta, cântico distante, drone grave, corrida, zumbido elétrico, batimento, trinco, maçaneta, louça, esfregar, saco plástico, tampa de lixeira, caixa de correio, janela correndo, botão do fogão, gás, objetos caindo.
+
+### Os olhos
+`horror/watching_eye.gd` + `shaders/eye.gdshader`: um olho pálido e úmido (esclera, íris escura, pupila, dois reflexos, pálpebras), desenhado por shader, no estilo da referência. A íris **segue a câmera do jogador** em tempo real, a "cabeça" vira devagar para continuar de frente para você, e pisca. Aparece:
+- **no escuro** (`ev_eyes`, noite 3+, bem mais provável na noite 5): um par de olhos na altura de um rosto, num quarto apagado, no banheiro, na lavanderia, no closet, na garagem ou do lado de fora de uma janela. Chegar a ~2 m ou acender a luz do cômodo faz eles se fecharem;
+- **na TV** (`ev_tv_image`): um olho enorme ocupa a tela e acompanha você;
+- **no menu** (`shaders/eye_ui.gdshader`): o logo do jogo é esse olho, seguindo o cursor e piscando. O ícone do projeto/janela é o mesmo olho (`assets/textures/icon_eye.png`; o ícone embutido no .exe exige rcedit, não configurado).
 
 ### O culto (sem explicação) — pistas permanentes × manifestações temporárias
 `world/cult.gd` separa duas coisas:
@@ -181,7 +187,7 @@ godot --headless --path . -s tests/door_test.gd    # portas externas nos dois se
 godot --headless --path . -s tests/horror_test.gd  # 65: buses, tarefas reais, sono até a noite 5, figuras, sustos (forçados e por gatilho real), aparições
 godot --headless --path . -s tests/menu_test.gd    # menu → PLAY → mundo → sair → jogar de novo
 godot --headless --path . -s tests/tasks_test.gd   # as 5 noites fazendo TODAS as tarefas pela mira + E: despertar das 3h, silhueta da noite 4 (bilhete no travesseiro), FINAL 2 (sussurro exato, sem noite 6)
-godot --headless --path . -s tests/story_test.gd   # manifestações e seus tempos de vida, limpeza entre noites, eventos/sustos novos, a fita no closet, FINAL 1 de ponta a ponta
+godot --headless --path . -s tests/story_test.gd   # 92: manifestações e tempos de vida, limpeza entre noites, cartas cabem no papel, todos os eventos novos (cada um na sua situação, inclusive os olhos que seguem o jogador), noite 5 sem luz, a fita na mesinha, FINAL 1 de ponta a ponta
 godot --headless --path . -s tests/soak_test.gd    # noite 5, relógios acelerados, jogador vagando por minutos
 godot --path . -s tests/screenshots.gd -- pasta    # capturas (precisa de GPU/Xvfb)
 ```

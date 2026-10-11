@@ -16,7 +16,7 @@ extends Node
 
 const MIX := {
 	# foley
-	"step_wood": [-8.0, 3.0, 25.0, "sfx"], "step_tile": [-5.0, 3.0, 25.0, "sfx"],
+	"step_wood": [-6.0, 3.0, 25.0, "sfx"], "step_tile": [-3.0, 3.0, 25.0, "sfx"],
 	"step_grass": [-5.0, 3.0, 25.0, "sfx"], "step_concrete": [-5.0, 3.0, 25.0, "sfx"],
 	"step_heavy": [-2.0, 4.0, 35.0, "sfx"],
 	"door_open": [9.0, 4.5, 35.0, "sfx"], "door_close": [-1.0, 5.0, 40.0, "sfx"], "door_creak": [-3.0, 4.0, 30.0, "sfx"],
@@ -31,7 +31,7 @@ const MIX := {
 	"key": [-6.0, 1.0, 5.0, "ui"], "paper": [-4.0, 2.0, 10.0, "ui"],
 	"fridge_hum": [-19.0, 2.0, 12.0, "ambience"], "fridge_clunk": [-5.0, 3.0, 20.0, "sfx"],
 	"fridge_open": [-4.0, 3.0, 20.0, "sfx"], "fridge_close": [-4.0, 3.0, 20.0, "sfx"],
-	"water": [-6.0, 2.5, 15.0, "sfx"], "clock_tick": [-11.0, 1.5, 7.0, "ambience"], "tick": [-8.0, 2.0, 10.0, "sfx"],
+	"water": [-6.0, 2.5, 15.0, "sfx"], "clock_tick": [-11.0, 1.5, 7.0, "ambience"], "tick": [-4.0, 2.0, 10.0, "sfx"],
 	"garage_door": [-2.0, 6.0, 50.0, "sfx"], "thud": [-3.0, 4.0, 30.0, "sfx"],
 	"car_engine": [-1.0, 8.0, 170.0, "sfx"], "car_idle": [-3.0, 6.0, 90.0, "sfx"], "car_pass": [3.0, 30.0, 300.0, "ambience"],
 	"car_door": [0.0, 8.0, 90.0, "sfx"],
@@ -39,7 +39,7 @@ const MIX := {
 	"crickets": [-6.0, 7.0, 50.0, "ambience"], "wind": [-12.0, 1.0, 1.0, "ambience"], "wind_gust": [-3.0, 16.0, 90.0, "ambience"],
 	"leaves": [-10.0, 9.0, 60.0, "ambience"], "distant_traffic": [-19.0, 1.0, 1.0, "ambience"], "lamp_buzz": [-22.0, 1.5, 9.0, "ambience"],
 	"owl": [-3.0, 20.0, 170.0, "ambience"], "dog_bark": [0.0, 14.0, 160.0, "ambience"], "wind_chime": [-4.0, 6.0, 60.0, "ambience"],
-	"house_creak": [-3.0, 4.0, 30.0, "sfx"], "pipes": [-4.0, 4.0, 30.0, "sfx"], "elec_buzz": [-6.0, 2.0, 10.0, "ambience"],
+	"house_creak": [-1.0, 4.0, 30.0, "sfx"], "pipes": [-2.0, 4.0, 30.0, "sfx"], "elec_buzz": [-6.0, 2.0, 10.0, "ambience"],
 	# chores
 	"dish": [-4.0, 2.0, 15.0, "sfx"], "scrub": [-7.0, 2.0, 12.0, "sfx"], "trash_bag": [-4.0, 2.0, 12.0, "sfx"],
 	"bin_lid": [-3.0, 4.0, 30.0, "sfx"], "mailbox": [2.0, 3.0, 20.0, "sfx"], "window_slide": [-3.0, 3.0, 20.0, "sfx"],
@@ -49,7 +49,7 @@ const MIX := {
 	"breath_close": [3.0, 1.2, 6.0, "horror"], "whisper": [1.0, 1.5, 8.0, "horror"], "window_bang": [4.0, 6.0, 40.0, "horror"],
 	"bang_door": [4.0, 9.0, 70.0, "horror"], "chant_far": [-5.0, 25.0, 140.0, "horror"], "drone_swell": [-11.0, 1.0, 1.0, "horror"],
 	"run_steps": [2.0, 5.0, 40.0, "horror"], "heartbeat": [-8.0, 1.0, 1.0, "horror"],
-	"glass_tap": [2.0, 4.0, 25.0, "horror"], "furniture_drag": [-1.0, 5.0, 35.0, "sfx"], "whoosh": [0.0, 4.0, 30.0, "horror"],
+	"glass_tap": [8.0, 4.0, 25.0, "horror"], "furniture_drag": [-1.0, 5.0, 35.0, "sfx"], "whoosh": [4.0, 4.0, 30.0, "horror"],
 	"mattress_creak": [0.0, 2.0, 10.0, "horror"],
 	# the tape and the endings (own buses, never faded with the world)
 	"vhs_hiss": [-15.0, 1.0, 1.0, "music"], "vhs_insert": [-2.0, 2.0, 12.0, "sfx"],

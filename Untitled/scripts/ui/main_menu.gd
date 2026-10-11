@@ -4,6 +4,12 @@ extends Control
 var settings: SettingsPanel
 var play: Button
 var grain: ColorRect
+## The logo: an eye that watches the cursor.
+var eye: ColorRect
+var eye_mat: ShaderMaterial
+var _open := 0.0
+var _open_target := 1.0
+var _blink_t := 2.5
 
 
 func _ready() -> void:
@@ -14,6 +20,17 @@ func _ready() -> void:
 	bg.color = Color(0.012, 0.012, 0.014)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	eye = ColorRect.new()
+	eye_mat = ShaderMaterial.new()
+	eye_mat.shader = load("res://shaders/eye_ui.gdshader")
+	eye_mat.set_shader_parameter("open", 0.0)
+	eye_mat.set_shader_parameter("surround", 0.9)
+	eye.material = eye_mat
+	eye.set_anchors_preset(Control.PRESET_CENTER)
+	eye.size = Vector2(360, 360)
+	eye.position = Vector2(-180, -330)
+	eye.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(eye)
 	play = Button.new()
 	play.text = "PLAY"
 	play.flat = true
@@ -24,7 +41,7 @@ func _ready() -> void:
 	play.add_theme_color_override("font_pressed_color", Color(0.5, 0.48, 0.45))
 	play.set_anchors_preset(Control.PRESET_CENTER)
 	play.custom_minimum_size = Vector2(180, 60)
-	play.position = Vector2(-90, -30)
+	play.position = Vector2(-90, 40)
 	play.pressed.connect(_on_play)
 	add_child(play)
 	var corner := HBoxContainer.new()
@@ -69,8 +86,28 @@ func _ready() -> void:
 		_on_play.call_deferred()
 
 
+func _process(delta: float) -> void:
+	if eye == null:
+		return
+	var c := eye.global_position + eye.size / 2.0
+	var d := (get_viewport().get_mouse_position() - c) / 420.0
+	eye_mat.set_shader_parameter("look", Vector2(clampf(d.x, -1.0, 1.0), clampf(-d.y * 1.4, -1.0, 1.0)))
+	_blink_t -= delta
+	if play.disabled:
+		_open_target = 0.0
+	elif _blink_t <= 0.0:
+		_blink_t = randf_range(3.0, 7.0)
+		_open_target = 0.0
+	elif _open <= 0.02 and _open_target == 0.0:
+		_open_target = 1.0
+	_open = move_toward(_open, _open_target, delta * (9.0 if _open_target == 0.0 else 2.5))
+	eye_mat.set_shader_parameter("open", _open)
+
+
 func _on_play() -> void:
 	play.disabled = true
+	_open_target = 0.0
+	_blink_t = 99.0
 	var t := create_tween()
 	t.tween_property(play, "modulate:a", 0.0, 0.6)
 	t.tween_interval(0.4)

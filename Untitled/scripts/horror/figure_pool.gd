@@ -22,6 +22,9 @@ func borrow() -> ShadowFigure:
 			f.set_meta("busy", true)
 			f.vanished.connect(func(): f.set_meta("busy", false), CONNECT_ONE_SHOT)
 			f.look_target = WorldState.player.camera if WorldState.player else null
+			# in a house without light, a pure black shape would be invisible
+			if WorldState.get_state("power/out", false):
+				f.set_rim(1.3)
 			return f
 	return null
 

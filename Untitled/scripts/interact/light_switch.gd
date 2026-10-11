@@ -27,7 +27,17 @@ func get_prompt() -> String:
 	return "Switch"
 
 
+var _dead_flip := false
+
+
 func interact(_player: Node) -> void:
+	if WorldState.get_state("power/out", false):
+		# the switch moves. nothing happens.
+		_dead_flip = not _dead_flip
+		lever.position.y = 0.012 if _dead_flip else -0.012
+		AudioManager.play_3d("switch_click", global_position, 0.0, randf_range(0.95, 1.08))
+		WorldState.log_interaction("switch_dead", obj_id)
+		return
 	var new_state := not _is_on()
 	for t in targets:
 		var l = WorldState.get_obj(t)

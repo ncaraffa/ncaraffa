@@ -443,8 +443,8 @@ func _lights_and_switches() -> void:
 	_switch("sw_bath", Vector3(5.5, 1.2, 2.735), 180, ["bath_ceiling", "bath_vanity"])
 	_switch("sw_laundry", Vector3(5.665, 1.2, 4.85), 90, ["laundry_bulb"])
 	_switch("sw_closet", Vector3(5.665, 1.2, 6.35), 90, ["closet_bulb"])
-	_switch("sw_foyer", Vector3(6.6, 1.2, 10.935), 180, ["foyer_ceiling"])
-	_switch("sw_porch", Vector3(6.72, 1.2, 10.935), 180, ["porch_front"])
+	_switch("sw_foyer", Vector3(6.6, 1.2, 10.865), 180, ["foyer_ceiling"])
+	_switch("sw_porch", Vector3(6.72, 1.2, 10.865), 180, ["porch_front"])
 	_switch("sw_living", Vector3(7.665, 1.2, 8.35), 90, ["living_ceiling"])
 	_switch("sw_dining", Vector3(7.95, 1.2, 6.135), 180, ["dining_chandelier"])
 	_switch("sw_kitchen", Vector3(11.065, 1.2, 5.0), 90, ["kitchen_ceiling"])
@@ -577,13 +577,6 @@ func _hall_bath_laundry() -> void:
 	Props.boxes(R, Vector3(6.0, 0, 5.95), 2, 21)
 	B.cyl(R, 0.12, 0.12, 0.35, Vector3(6.2, 0.175, 7.9), Mats.color(Color(0.5, 0.15, 0.12), 0.5), false, Vector3.ZERO, 12)
 	B.cyl(R, 0.015, 0.015, 1.0, Vector3(6.2, 0.75, 7.9), Mats.m("metal"), false, Vector3(0, 0, 8), 6)
-	# on the closet floor, at the back, under the coats: an old tape
-	var tape := VHSTape.new()
-	tape.name = "VHSTape"
-	R.add_child(tape)
-	tape.position = Vector3(7.18, 0.0, 6.35)
-	tape.rotation_degrees.y = 28.0
-	tape.build()
 
 
 func _foyer() -> void:
@@ -636,6 +629,13 @@ func _living() -> void:
 	Props.rug(R, Vector3(13.2, 0, 8.6), Vector2(3.0, 2.4), Mats.textured("carpet", 1.0, 1.0, "", true, Color(0.62, 0.5, 0.4)))
 	Props.pickup_box(R, Vector3(13.3, 0.425, 8.45), "remote", Vector3(0.05, 0.022, 0.18), Mats.m("plastic_black"), 0.15)
 	Props.mug(R, Vector3(13.55, 0.425, 8.9), "mug_living", Color(0.4, 0.5, 0.6))
+	# an old tape lying on the coffee table, as if somebody left it there
+	var tape := VHSTape.new()
+	tape.name = "VHSTape"
+	R.add_child(tape)
+	tape.position = Vector3(13.47, 0.425, 8.22)
+	tape.rotation_degrees.y = 64.0
+	tape.build()
 	B.box(R, Vector3(0.22, 0.015, 0.3), Vector3(13.2, 0.428, 8.95), Mats.color(Color(0.7, 0.3, 0.25), 0.7), false, Vector3(0, 20, 0))
 	var lc := WallClock.new()
 	R.add_child(lc)
@@ -761,7 +761,7 @@ func _kitchen() -> void:
 	R.add_child(knob)
 	knob.position = Vector3(15.25, 0.84, 1.53)
 	knob.rotation_degrees.y = -90
-	knob.setup("stove_knob", Vector3(-0.15, 0.075, 0.31), stove.get_meta("oven_window"))
+	knob.setup("stove_knob", Vector3(0.07, 0.075, -0.2), stove.get_meta("oven_window"))
 
 
 func _garage() -> void:
